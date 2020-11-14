@@ -1,0 +1,8 @@
+BANK_SELECT     = $8000
+BANK_DATA       = $8001
+MIRRORING       = $a000
+PRG_RAM_PROTECT = $a001
+IRQ_LATCH       = $c000
+IRQ_RELOAD      = $c001
+IRQ_DISABLE     = $e000
+IRQ_ENABLE      = $e001

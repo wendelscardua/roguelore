@@ -1,0 +1,6 @@
+*.o
+*.nes
+*.nsf
+/labels.txt
+*.dbg
+*.notes.bin
