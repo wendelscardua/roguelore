@@ -526,6 +526,20 @@ nametable_main: .incbin "../assets/nametables/main.rle"
 
 .include "../assets/metasprites.inc"
 
+; map data
+
+
+.define map_data_pointers map_data_001, map_data_002, map_data_003, map_data_004, \
+                          map_data_005, map_data_006, map_data_007, map_data_008, \
+                          map_data_009, map_data_010, map_data_011, map_data_012, \
+                          map_data_013, map_data_014, map_data_015, map_data_016
+map_data_ptr_l: .lobytes map_data_pointers
+map_data_ptr_h: .hibytes map_data_pointers
+
+.repeat 16, map_index
+.ident(.concat("map_data_", .sprintf("%03d", map_index + 1))): .incbin .concat("../assets/maps/", .sprintf("%03d", map_index + 1), ".bin")
+.endrepeat
+
 ; masks for faster bounded rng
 
 rng_mask:
