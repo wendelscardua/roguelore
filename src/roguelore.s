@@ -160,12 +160,14 @@ game_state: .res 1
 
 ;;; generated levels
 
-; index of hardcoded levels
+; hardcoded level indices
 dungeon_levels: .res MAX_DUNGEON_LEVELS
-; coordinates of "up stairs" (yyyyxxxx)
-dungeon_up_stairs: .res MAX_DUNGEON_LEVELS
-; coordinates of "down stairs" (yyyyxxxx)
-dungeon_down_stairs: .res MAX_DUNGEON_LEVELS
+; coordinates of "up stairs"
+dungeon_up_stairs_x: .res MAX_DUNGEON_LEVELS
+dungeon_up_stairs_y: .res MAX_DUNGEON_LEVELS
+; coordinates of "down stairs"
+dungeon_down_stairs_x: .res MAX_DUNGEON_LEVELS
+dungeon_down_stairs_y: .res MAX_DUNGEON_LEVELS
 
 .segment "CODE"
 
