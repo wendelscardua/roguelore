@@ -78,6 +78,8 @@ FT_DPCM_OFF=$c000
 
 ; game config
 
+MAX_DUNGEON_LEVELS = 20
+
 ; debug - macros for NintendulatorDX interaction
 .ifdef DEBUG
 .macro debugOut str
@@ -156,6 +158,14 @@ game_state: .res 1
 .segment "BSS"
 ; non-zp RAM goes here
 
+;;; generated levels
+
+; index of hardcoded levels
+dungeon_levels: .res MAX_DUNGEON_LEVELS
+; coordinates of "up stairs" (yyyyxxxx)
+dungeon_up_stairs: .res MAX_DUNGEON_LEVELS
+; coordinates of "down stairs" (yyyyxxxx)
+dungeon_down_stairs: .res MAX_DUNGEON_LEVELS
 
 .segment "CODE"
 
@@ -489,6 +499,18 @@ etc:
   RTS
 .endproc
 
+.proc generate_dungeon_levels
+  LDX #0
+dungeon_level_loop:
+  JSR rand
+  AND #%1111
+  STA dungeon_levels, X
+  INX
+  CPX #MAX_DUNGEON_LEVELS
+  BNE dungeon_level_loop
+  RTS
+.endproc
+
 .proc write_string
   LDA PPUSTATUS
   LDA ppu_addr_ptr+1
@@ -527,7 +549,6 @@ nametable_main: .incbin "../assets/nametables/main.rle"
 .include "../assets/metasprites.inc"
 
 ; map data
-
 
 .define map_data_pointers map_data_001, map_data_002, map_data_003, map_data_004, \
                           map_data_005, map_data_006, map_data_007, map_data_008, \
