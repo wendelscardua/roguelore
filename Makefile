@@ -31,8 +31,8 @@ src/${PROJECT}.o: src/${PROJECT}.s src/constants.inc src/mmc3-constants.inc src/
 src/audio-data.o: src/audio-data.s assets/audio/sfx.s assets/audio/soundtrack.s
 	ca65 src/audio-data.s ${CA65_FLAGS}
 
-assets/maps/%.bin: assets/maps/%.s
-	ruby tools/bitfy.rb $^ $@
+assets/maps/%.bin: assets/maps/%.s tools/bitfy.rb
+	ruby tools/bitfy.rb $< $@
 
 assets/audio/soundtrack.s: assets/audio/soundtrack.txt
 	${TEXT2DATA} $^ -ca65 -allin

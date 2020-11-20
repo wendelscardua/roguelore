@@ -16,8 +16,11 @@ TILE_TO_BIT = {
 
 bytes = []
 File.read(input).lines.each do |line|
+  bytes += [0x62, 0x62] # left border
   bytes += line.scan(/(?<=\$)[0-9a-f]{2}/).map { |byte| byte.to_i(16) }
+  bytes += [0x62, 0x62] # right border
 end
+# note: borders make rows have power-of-2 tiles
 
 compressed_bytes = bytes.each_slice(8)
                         .map { |slice| slice.map { |tile| TILE_TO_BIT[tile] }.join.to_i(2) }
