@@ -146,6 +146,7 @@ sprite_counter: .res 1
 
 temp_x: .res 1
 temp_y: .res 1
+temp_acc: .res 1
 
 .enum game_states
   waiting_to_start
@@ -513,6 +514,44 @@ dungeon_level_loop:
   RTS
 .endproc
 
+; detects collision between coordinate and level tile
+; input: Y  = hardcoded level index
+;        temp_x, temp_y = tile coordinates (0..31, 0..19)
+; cobbles: Y, temp_acc
+; return: flag nonzero if collided with dungeon
+.proc dungeon_level_collision
+  LDA map_data_ptr_l, Y
+  STA addr_ptr
+  LDA map_data_ptr_h, Y
+  STA addr_ptr+1
+
+  ; byte index = (y * 32 + x) / 8
+  ;            = y * 4 + x / 8
+
+  LDA temp_y
+  ASL
+  ASL
+  STA temp_acc
+  LDA temp_x
+  LSR
+  LSR
+  LSR
+  CLC
+  ADC temp_acc
+  TAY
+  LDA (addr_ptr), Y
+  STA temp_acc
+
+  ; bit index = x % 8
+  LDA temp_x
+  AND #%111
+  TAY
+  LDA temp_acc
+  AND map_mask, Y
+
+  RTS
+.endproc
+
 .proc write_string
   LDA PPUSTATUS
   LDA ppu_addr_ptr+1
@@ -549,6 +588,12 @@ nametable_title: .incbin "../assets/nametables/title.rle"
 nametable_main: .incbin "../assets/nametables/main.rle"
 
 .include "../assets/metasprites.inc"
+
+; mask bit for map data
+map_mask:
+.repeat 8, i
+  .byte 1<<(7-i)
+.endrepeat
 
 ; map data
 
