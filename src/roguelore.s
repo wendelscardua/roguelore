@@ -535,6 +535,44 @@ dungeon_level_loop:
   JSR rand
   AND #%1111
   STA dungeon_levels, X
+  TAY ; Y is used for collision below
+
+reroll_up_stairs:
+  JSR rand
+  AND #%11111
+  STA temp_x ; 0..31
+  JSR rand
+  AND #%1111
+  CLC
+  ADC #2
+  STA temp_y ; 2..17 (0..19 is harder to roll)
+
+  JSR dungeon_level_collision
+  BNE reroll_up_stairs
+
+  LDA temp_x
+  STA dungeon_up_stairs_x, X
+  LDA temp_y
+  STA dungeon_up_stairs_y, X
+
+reroll_down_stairs:
+  JSR rand
+  AND #%11111
+  STA temp_x ; 0..31
+  JSR rand
+  AND #%1111
+  CLC
+  ADC #2
+  STA temp_y ; 2..17 (0..19 is harder to roll)
+
+  JSR dungeon_level_collision
+  BNE reroll_down_stairs
+
+  LDA temp_x
+  STA dungeon_down_stairs_x, X
+  LDA temp_y
+  STA dungeon_down_stairs_y, X
+
   INX
   CPX #MAX_DUNGEON_LEVELS
   BNE dungeon_level_loop
