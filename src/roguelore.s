@@ -79,6 +79,23 @@ FT_DPCM_OFF=$c000
 ; game config
 
 MAX_DUNGEON_LEVELS = 20
+MAX_AGENTS = 16
+
+.enum agent_type
+  saci
+  corpo_seco
+  mula_sem_cabeca
+  boitata
+  cuca
+  mapinguari
+.endenum
+
+.enum direction
+  up
+  down
+  left
+  right
+.endenum
 
 ; debug - macros for NintendulatorDX interaction
 .ifdef DEBUG
@@ -143,6 +160,16 @@ nmis: .res 1
 old_nmis: .res 1
 
 sprite_counter: .res 1
+
+agents_type: .res MAX_AGENTS
+agents_x: .res MAX_AGENTS ; (0..31)
+agents_y: .res MAX_AGENTS ; (0..19)
+agents_str: .res MAX_AGENTS
+agents_int: .res MAX_AGENTS
+agents_spd: .res MAX_AGENTS
+agents_direction: .res MAX_AGENTS
+agents_aux: .res MAX_AGENTS
+agents_turn_counter: .res MAX_AGENTS
 
 temp_x: .res 1
 temp_y: .res 1
