@@ -533,6 +533,18 @@ etc:
   RTS
 .endproc
 
+; rolls a "d6"
+; return: A = random number (1..6)
+.proc roll_d6
+reroll:
+  JSR rand
+  AND #%111
+  BEQ reroll
+  CMP #%111
+  BEQ reroll
+  RTS
+.endproc
+
 .proc generate_dungeon_levels
   LDX #0
 dungeon_level_loop:
