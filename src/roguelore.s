@@ -481,6 +481,10 @@ etc:
 
   ; game setup here
 
+  JSR generate_dungeon_levels
+
+  ; turn on screen
+
   LDA #$20
   STA PPUADDR
   LDA #$00
