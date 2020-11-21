@@ -197,6 +197,9 @@ dungeon_up_stairs_y: .res MAX_DUNGEON_LEVELS
 dungeon_down_stairs_x: .res MAX_DUNGEON_LEVELS
 dungeon_down_stairs_y: .res MAX_DUNGEON_LEVELS
 
+.segment "PRGRAM"
+
+
 .segment "CODE"
 
 .import reset_handler
@@ -276,6 +279,10 @@ clear_ram:
   ; horizontal mirroring (fix for everdrive)
   LDA #%00000001
   STA $a000
+
+  ; enable PRG RAM
+  LDA #%10000000
+  STA $a001
 
   SCREEN_ON
 
