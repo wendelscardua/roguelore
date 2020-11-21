@@ -169,7 +169,8 @@ agents_int: .res MAX_AGENTS
 agents_spd: .res MAX_AGENTS
 agents_direction: .res MAX_AGENTS
 agents_aux: .res MAX_AGENTS
-agents_turn_counter: .res MAX_AGENTS
+agents_action_counter: .res MAX_AGENTS
+num_agents: .res 1
 
 temp_x: .res 1
 temp_y: .res 1
@@ -196,6 +197,8 @@ dungeon_up_stairs_y: .res MAX_DUNGEON_LEVELS
 ; coordinates of "down stairs"
 dungeon_down_stairs_x: .res MAX_DUNGEON_LEVELS
 dungeon_down_stairs_y: .res MAX_DUNGEON_LEVELS
+
+current_dungeon_level: .res 1
 
 .segment "PRGRAM"
 
@@ -489,6 +492,26 @@ etc:
   ; game setup here
 
   JSR generate_dungeon_levels
+
+  LDA #0
+  STA current_dungeon_level
+
+  LDA #agent_type::saci
+  STA agents_type
+  LDA dungeon_up_stairs_x
+  STA agents_x
+  LDA dungeon_up_stairs_y
+  STA agents_y
+  LDA #1
+  STA agents_str
+  STA agents_int
+  STA agents_spd
+  LDA #direction::right
+  STA agents_direction
+  LDA #6
+  STA agents_action_counter
+  LDA #1
+  STA num_agents
 
   ; turn on screen
 
