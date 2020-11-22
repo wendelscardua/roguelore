@@ -478,7 +478,7 @@ etc:
 
   SCREEN_ON
 
-  PLAY CanonInD
+  ; PLAY CanonInD
 
   RTS
 .endproc
