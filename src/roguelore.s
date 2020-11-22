@@ -497,6 +497,7 @@ etc:
 
   LDA #0
   STA current_dungeon_level
+  JSR draw_current_dungeon_level
 
   LDA #agent_type::saci
   STA agents_type
@@ -529,6 +530,56 @@ etc:
   SCREEN_ON
 
   ; PLAY CanonInD
+
+  RTS
+.endproc
+
+.proc draw_current_dungeon_level
+  LDA #0
+  STA temp_y
+  LDA #$20
+  STA ppu_addr_ptr
+  LDA #$42
+  STA ppu_addr_ptr+1
+  BIT PPUSTATUS
+
+row_loop:
+
+  LDA ppu_addr_ptr
+  STA PPUADDR
+  LDA ppu_addr_ptr+1
+  STA PPUADDR
+
+  LDA #2
+  STA temp_x
+column_loop:
+  LDX current_dungeon_level
+  LDY dungeon_levels, X
+  JSR dungeon_level_collision
+  BEQ :+
+  LDA #-$10
+:
+  CLC
+  ADC #$72
+  STA PPUDATA
+
+  INC temp_x
+  LDA temp_x
+  CMP #30
+  BNE column_loop
+
+  LDA #$20
+  CLC
+  ADC ppu_addr_ptr+1
+  STA ppu_addr_ptr+1
+  BCC :+
+  INC ppu_addr_ptr
+:
+
+  INC temp_y
+  LDA temp_y
+  CMP #20
+  BNE row_loop
 
   RTS
 .endproc
