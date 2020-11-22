@@ -660,7 +660,27 @@ column_loop:
   RTS
 .endproc
 
+; decrements action counter of agents by their speed
+; when counter is negative, that agent will act this turn
 .proc action_counter_handler
+  LDX num_agents
+  DEX
+loop:
+  LDA agents_action_counter, X
+  SEC
+  SBC agents_spd, X
+  STA agents_action_counter, X
+  BPL next
+
+  LDA #playing_state::player_input
+  CPX #0
+  BNE :+
+  LDA #playing_state::player_input
+:
+  STA current_playing_state
+next:
+  DEX
+  BPL loop
   RTS
 .endproc
 
