@@ -1,6 +1,7 @@
 .include "constants.inc"
 .include "mmc3-constants.inc"
 .include "header.inc"
+.include "vram-buffer.inc"
 
 .feature force_range
 .linecont +
@@ -247,6 +248,7 @@ vblankwait:
 .proc nmi_handler
   save_regs
   INC nmis
+  JSR flush_vram_buffer
   restore_regs
   RTI
 .endproc

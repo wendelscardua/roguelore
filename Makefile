@@ -12,7 +12,7 @@ TARGET=${PROJECT}.nes
 
 default: ${TARGET}
 
-${TARGET}: src/${PROJECT}.o src/reset.o src/readjoy.o src/unrle.o src/rand.o src/audio-data.o
+${TARGET}: src/${PROJECT}.o src/reset.o src/readjoy.o src/unrle.o src/rand.o src/vram-buffer.o src/audio-data.o
 	ld65 $^ -t nes -o ${TARGET} ${LD65_FLAGS}
 
 debug: LD65_FLAGS += -Ln labels.txt --dbgfile ${PROJECT}.nes.dbg
@@ -20,6 +20,7 @@ debug: CA65_FLAGS += -g -DDEBUG=1
 debug: ${TARGET}
 
 src/${PROJECT}.o: src/${PROJECT}.s src/constants.inc src/mmc3-constants.inc src/header.inc \
+	src/vram-buffer.inc \
 	src/famitone2.s \
 	assets/maps/*.bin \
 	assets/bg-palettes.pal assets/sprite-palettes.pal \
