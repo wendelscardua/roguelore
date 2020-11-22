@@ -98,6 +98,18 @@ MAX_AGENTS = 16
   right
 .endenum
 
+.enum playing_state
+  ; we are decrementing action counters
+  ; until at least one of them becomes negative
+  action_counter
+  ; player agent must act (negative counter), waiting input
+  player_input
+  ; processing actions for the other agents
+  agents_input
+  ; animating actions
+  process_actions
+.endenum
+
 ; debug - macros for NintendulatorDX interaction
 .ifdef DEBUG
 .macro debugOut str
