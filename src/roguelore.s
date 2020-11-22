@@ -176,6 +176,8 @@ num_agents: .res 1
 temp_x: .res 1
 temp_y: .res 1
 temp_acc: .res 1
+temp_tile: .res 1
+temp_flag: .res 1
 
 .enum game_states
   waiting_to_start
@@ -612,7 +614,70 @@ column_loop:
 .endproc
 
 .proc playing
-  JSR readjoy
+
+
+  JSR render_agents
+  LDX sprite_counter
+  LDA #$F0
+:
+  STA oam_sprites+Sprite::ycoord, X
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  BNE :-
+  RTS
+.endproc
+
+.proc render_agents
+  LDY #0
+  LDX sprite_counter
+loop:
+  LDA agents_x, Y
+  .repeat 3
+  ASL
+  .endrepeat
+  STA oam_sprites+Sprite::xcoord, X
+  LDA agents_y, Y
+  .repeat 3
+  ASL
+  .endrepeat
+  CLC
+  ADC #$10
+  STA oam_sprites+Sprite::ycoord, X
+
+  TXA
+  PHA
+
+  LDX agents_type, Y
+  ; TODO: implement cuca camo here
+
+  LDA tile_per_agent_type, X
+  STA temp_tile
+  LDA flag_per_agent_type, X
+  STA temp_flag
+  LDA agents_direction, Y
+  CMP #direction::left
+  BNE :+
+  LDA temp_flag
+  ORA #OAM_FLIP_H
+  STA temp_flag
+:
+  PLA
+  TAX
+
+  LDA temp_tile
+  STA oam_sprites+Sprite::tile, X
+  LDA temp_flag
+  STA oam_sprites+Sprite::flag, X
+
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+skip:
+  INY
+  CPY num_agents
+  BNE loop
+  STX sprite_counter
   RTS
 .endproc
 
@@ -634,7 +699,6 @@ dungeon_level_loop:
   JSR rand
   AND #%1111
   STA dungeon_levels, X
-  TAY ; Y is used for collision below
 
 reroll_up_stairs:
   JSR rand
@@ -646,6 +710,7 @@ reroll_up_stairs:
   ADC #2
   STA temp_y ; 2..17 (0..19 is harder to roll)
 
+  LDY dungeon_levels, X
   JSR dungeon_level_collision
   BNE reroll_up_stairs
 
@@ -664,6 +729,7 @@ reroll_down_stairs:
   ADC #2
   STA temp_y ; 2..17 (0..19 is harder to roll)
 
+  LDY dungeon_levels, X
   JSR dungeon_level_collision
   BNE reroll_down_stairs
 
@@ -752,6 +818,22 @@ nametable_title: .incbin "../assets/nametables/title.rle"
 nametable_main: .incbin "../assets/nametables/main.rle"
 
 .include "../assets/metasprites.inc"
+
+; agents stuff
+tile_per_agent_type:
+  .byte $00 ; saci
+  .byte $01 ; corpo seco
+  .byte $02 ; mula sem cabeca
+  .byte $03 ; boitatá
+  .byte $04 ; cuca
+  .byte $05 ; mapinguari
+flag_per_agent_type:
+  .byte $00 ; saci
+  .byte $01 ; corpo seco
+  .byte $00 ; mula sem cabeca
+  .byte $00 ; boitatá
+  .byte $01 ; cuca
+  .byte $02 ; mapinguari
 
 ; mask bit for map data
 map_mask:
