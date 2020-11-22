@@ -214,6 +214,7 @@ dungeon_down_stairs_x: .res MAX_DUNGEON_LEVELS
 dungeon_down_stairs_y: .res MAX_DUNGEON_LEVELS
 
 current_dungeon_level: .res 1
+current_playing_state: .res 1
 
 .segment "PRGRAM"
 
@@ -427,6 +428,15 @@ etc:
   RTS
 .endproc
 
+.proc playing_state_handler
+  LDX current_playing_state
+  LDA playing_state_handlers_h, X
+  PHA
+  LDA playing_state_handlers_l, X
+  PHA
+  RTS
+.endproc
+
 .proc slow_updates
   JSR rand
   RTS
@@ -530,6 +540,9 @@ etc:
   LDA #1
   STA num_agents
 
+  LDA #playing_state::action_counter
+  STA current_playing_state
+
   ; turn on screen
 
   LDA #$20
@@ -626,8 +639,15 @@ column_loop:
 .endproc
 
 .proc playing
+  JSR playing_state_handler
+  JSR render_stuff
+  RTS
+.endproc
 
-
+.proc render_stuff
+  LDX #0
+  STX sprite_counter
+  ; TODO render projectiles
   JSR render_agents
   LDX sprite_counter
   LDA #$F0
@@ -637,6 +657,22 @@ column_loop:
   INX
   .endrepeat
   BNE :-
+  RTS
+.endproc
+
+.proc action_counter_handler
+  RTS
+.endproc
+
+.proc player_input_handler
+  RTS
+.endproc
+
+.proc agents_input_handler
+  RTS
+.endproc
+
+.proc process_actions_handler
   RTS
 .endproc
 
@@ -821,6 +857,14 @@ reroll_down_stairs:
 
 game_state_handlers_l: .lobytes game_state_handlers
 game_state_handlers_h: .hibytes game_state_handlers
+
+.define playing_state_handlers action_counter_handler-1, \
+                               player_input_handler-1, \
+                               agents_input_handler-1, \
+                               process_actions_handler-1
+
+playing_state_handlers_l: .lobytes playing_state_handlers
+playing_state_handlers_h: .hibytes playing_state_handlers
 
 palettes:
 .incbin "../assets/bg-palettes.pal"
