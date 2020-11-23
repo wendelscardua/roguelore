@@ -77,10 +77,18 @@ FT_DPCM_OFF=$c000
   STA PPUCTRL
 .endmacro
 
+.macro INX_ACTION_QUEUE
+  INX
+  TXA
+  AND #(MAX_ACTIONS - 1)
+  TAX
+.endmacro
+
 ; game config
 
 MAX_DUNGEON_LEVELS = 20
 MAX_AGENTS = 16
+MAX_ACTIONS = 32 ; must be power of 2
 
 .enum agent_type
   saci
@@ -96,6 +104,13 @@ MAX_AGENTS = 16
   down
   left
   right
+.endenum
+
+.enum action_type
+  move = 4
+  melee = 8
+  skill_a = 16
+  skill_b = 32
 .endenum
 
 .enum playing_state
@@ -185,6 +200,9 @@ agents_aux: .res MAX_AGENTS
 agents_action_counter: .res MAX_AGENTS
 num_agents: .res 1
 
+action_queue_head: .res 1
+action_queue_tail: .res 1
+
 temp_x: .res 1
 temp_y: .res 1
 temp_acc: .res 1
@@ -215,6 +233,9 @@ dungeon_down_stairs_y: .res MAX_DUNGEON_LEVELS
 
 current_dungeon_level: .res 1
 current_playing_state: .res 1
+
+action_queue: .res MAX_ACTIONS
+action_agent_queue: .res MAX_ACTIONS
 
 .segment "PRGRAM"
 
@@ -542,6 +563,10 @@ etc:
 
   LDA #playing_state::action_counter
   STA current_playing_state
+
+  LDA #0
+  STA action_queue_head
+  STA action_queue_tail
 
   ; turn on screen
 
