@@ -84,11 +84,26 @@ FT_DPCM_OFF=$c000
   TAX
 .endmacro
 
+.macro ENQUEUE_ACTION item
+  .if (.match ({item}, x))
+  TXA
+  .elseif (.match ({item}, y))
+  TYA
+  .elseif (.match ({item}, a))
+  .else
+  LDA item
+  .endif
+  LDX action_queue_tail
+  STA action_queue, X
+  INX_ACTION_QUEUE
+  STX action_queue_tail
+.endmacro
+
 ; game config
 
 MAX_DUNGEON_LEVELS = 20
 MAX_AGENTS = 16
-MAX_ACTIONS = 32 ; must be power of 2
+MAX_ACTIONS = 64 ; must be power of 2
 
 .enum agent_type
   saci
@@ -107,10 +122,10 @@ MAX_ACTIONS = 32 ; must be power of 2
 .endenum
 
 .enum action_type
-  move = 4
-  melee = 8
-  skill_a = 16
-  skill_b = 32
+  move = 1
+  melee = 2
+  skill_a = 3
+  skill_b = 4
 .endenum
 
 .enum playing_state
@@ -235,7 +250,6 @@ current_dungeon_level: .res 1
 current_playing_state: .res 1
 
 action_queue: .res MAX_ACTIONS
-action_agent_queue: .res MAX_ACTIONS
 
 .segment "PRGRAM"
 
@@ -285,6 +299,11 @@ vblankwait:
   save_regs
   INC nmis
   JSR flush_vram_buffer
+  JSR refresh_oam
+  ; reset ppuaddr
+  BIT PPUSTATUS
+  JSR set_scroll
+  JSR FamiToneUpdate
   restore_regs
   RTI
 .endproc
@@ -353,22 +372,8 @@ forever:
   CMP old_nmis
   BEQ etc
   STA old_nmis
-.ifdef DEBUG
-  LDA #%01011110  ; red tint
-  STA PPUMASK
-.endif
-  JSR refresh_oam
-  ; reset ppuaddr
-  BIT PPUSTATUS
-  JSR set_scroll
-
   ; new frame code
   JSR game_state_handler
-.ifdef DEBUG
-  LDA #%00011110  ; no tint
-  STA PPUMASK
-.endif
-  JSR FamiToneUpdate
   JSR slow_updates
 etc:
   JMP forever
@@ -710,14 +715,133 @@ next:
 .endproc
 
 .proc player_input_handler
+  JSR readjoy
+
+  LDA pressed_buttons
+  AND #BUTTON_A
+  BEQ :+
+  ENQUEUE_ACTION #0
+  ENQUEUE_ACTION #action_type::skill_a
+  LDA #playing_state::agents_input
+  STA current_playing_state
+  RTS
+:
+  LDA pressed_buttons
+  AND #BUTTON_B
+  BEQ :+
+  ENQUEUE_ACTION #0
+  ENQUEUE_ACTION #action_type::skill_b
+  LDA #playing_state::agents_input
+  STA current_playing_state
+  RTS
+:
+  
+  LDX #$ff
+  STA temp_acc
+  LDA pressed_buttons
+  AND #BUTTON_UP
+  BEQ :+
+  LDX #direction::up
+:
+  LDA pressed_buttons
+  AND #BUTTON_DOWN
+  BEQ :+
+  LDX #direction::down
+:
+  LDA pressed_buttons
+  AND #BUTTON_LEFT
+  BEQ :+
+  LDX #direction::left
+:
+  LDA pressed_buttons
+  AND #BUTTON_RIGHT
+  BEQ :+
+  LDX #direction::right
+:
+
+  CPX #$ff
+  BNE :+
+  ; no direction input
+  RTS
+:
+  STX agents_direction
+
+  LDA agents_x
+  CLC
+  ADC delta_x_lt, X
+  STA temp_x
+  LDA agents_y
+  CLC
+  ADC delta_y_lt, X
+  STA temp_y
+
+  LDX current_dungeon_level
+  LDY dungeon_levels, X
+  JSR dungeon_level_collision
+  BEQ :+
+  ; can't walk through walls, no action happened
+  RTS
+:
+
+  ; move or melee, check for another enemy collision
+  LDY #$1
+@loop:
+  CPY num_agents
+  BCS move_action
+
+  LDA agents_x, Y
+  CMP temp_x
+  BNE @next
+
+  LDA agents_y, Y
+  CMP temp_y
+  BNE @next
+
+  ENQUEUE_ACTION #0
+  ENQUEUE_ACTION #action_type::melee
+  ENQUEUE_ACTION Y
+  LDA #playing_state::agents_input
+  STA current_playing_state
+  
+  RTS
+
+
+@next:
+  INY
+  JMP @loop
+
+
+move_action:
+  ENQUEUE_ACTION #0
+  ENQUEUE_ACTION #action_type::move
+  LDA #playing_state::agents_input
+  STA current_playing_state
+  
   RTS
 .endproc
 
 .proc agents_input_handler
+  ; TODO get agent actions
+  LDA #playing_state::process_actions
+  STA current_playing_state
   RTS
 .endproc
 
 .proc process_actions_handler
+  LDX action_queue_head
+  CPX action_queue_tail
+  BNE :+
+  ; no actions available
+  LDA #playing_state::action_counter
+  STA current_playing_state
+  RTS
+:
+
+  ; TODO implement actions
+  LDY action_queue, X ; Y = actor index
+  INX_ACTION_QUEUE
+  STX action_queue_head
+  
   RTS
 .endproc
 
@@ -919,6 +1043,10 @@ nametable_title: .incbin "../assets/nametables/title.rle"
 nametable_main: .incbin "../assets/nametables/main.rle"
 
 .include "../assets/metasprites.inc"
+
+; delta coordinates per direction
+delta_x_lt: .byte 0, 0, -1, 1
+delta_y_lt: .byte -1, 1, 0, 0
 
 ; agents stuff
 tile_per_agent_type:
