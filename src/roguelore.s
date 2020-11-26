@@ -122,10 +122,10 @@ MAX_ACTIONS = 64 ; must be power of 2
 .endenum
 
 .enum action_type
-  move = 1
-  melee = 2
-  skill_a = 3
-  skill_b = 4
+  move
+  melee
+  skill_a
+  skill_b
 .endenum
 
 .enum playing_state
@@ -211,6 +211,8 @@ agents_str: .res MAX_AGENTS
 agents_int: .res MAX_AGENTS
 agents_spd: .res MAX_AGENTS
 agents_direction: .res MAX_AGENTS
+agents_hp: .res MAX_AGENTS
+agents_max_hp: .res MAX_AGENTS
 agents_aux: .res MAX_AGENTS
 agents_action_counter: .res MAX_AGENTS
 num_agents: .res 1
@@ -561,10 +563,48 @@ etc:
   STA agents_spd
   LDA #direction::right
   STA agents_direction
-  LDA #6
+  LDA #5
   STA agents_action_counter
   LDA #1
   STA num_agents
+
+; debug enemies
+  LDX #1
+  LDA #agent_type::cuca
+  STA agents_type, X
+  LDA dungeon_down_stairs_x
+  STA agents_x, X
+  LDA dungeon_down_stairs_y
+  STA agents_y, X
+  LDA #1
+  STA agents_str, X
+  STA agents_int, X
+  STA agents_spd, X
+  LDA #direction::right
+  STA agents_direction, X
+  LDA #5
+  STA agents_action_counter, X
+
+  LDX #2
+  LDA #agent_type::mapinguari
+  STA agents_type, X
+  LDA dungeon_down_stairs_x
+  STA agents_x, X
+  LDA dungeon_down_stairs_y
+  STA agents_y, X
+  LDA #2
+  STA agents_str, X
+  STA agents_int, X
+  STA agents_spd, X
+  LDA #direction::right
+  STA agents_direction, X
+  LDA #5
+  STA agents_action_counter, X
+
+  LDA #3
+  STA num_agents
+
+
 
   LDA #playing_state::action_counter
   STA current_playing_state
@@ -702,7 +742,7 @@ loop:
   STA agents_action_counter, X
   BPL next
 
-  LDA #playing_state::player_input
+  LDA #playing_state::agents_input
   CPX #0
   BNE :+
   LDA #playing_state::player_input
@@ -716,6 +756,14 @@ next:
 
 .proc player_input_handler
   JSR readjoy
+  LDA pressed_buttons
+  BNE :+
+  RTS
+:
+  LDA agents_action_counter
+  CLC
+  ADC #5
+  STA agents_action_counter
 
   LDA pressed_buttons
   AND #BUTTON_A
@@ -733,7 +781,6 @@ next:
   ENQUEUE_ACTION #action_type::skill_b
   LDA #playing_state::agents_input
   STA current_playing_state
-  RTS
 :
   
   LDX #$ff
@@ -782,7 +829,6 @@ next:
   ; can't walk through walls, no action happened
   RTS
 :
-
   ; move or melee, check for another enemy collision
   LDY #$1
 @loop:
@@ -805,7 +851,6 @@ next:
   
   RTS
 
-
 @next:
   INY
   JMP @loop
@@ -821,9 +866,102 @@ move_action:
 .endproc
 
 .proc agents_input_handler
-  ; TODO get agent actions
+  LDX #1
+@loop:
+  CPX num_agents
+  BCS @exit
+
+  LDA agents_action_counter, X
+  BPL @next
+
+  ; restore action counter
+  CLC
+  ADC #$5
+  STA agents_action_counter, X
+
+  JSR get_input_for_agent
+
+@next:
+  INX
+  JMP @loop
+@exit:
+
   LDA #playing_state::process_actions
   STA current_playing_state
+  RTS
+.endproc
+
+; enqueue action for current (X-indexed) agent if able
+; (must preserve X)
+; cobbles Y, temp_*
+.proc get_input_for_agent
+  ; TODO better "ai", different for each type
+  JSR rand
+  AND #%11
+  STA agents_direction, X
+  TAY
+
+  LDA agents_x, X
+  CLC
+  ADC delta_x_lt, Y
+  STA temp_x
+
+  LDA agents_y, X
+  CLC
+  ADC delta_y_lt, Y
+  STA temp_y
+
+  TXA
+  PHA
+
+  LDX current_dungeon_level
+  LDY dungeon_levels, X
+  JSR dungeon_level_collision
+  BEQ no_collision
+  PLA
+  TAX
+  JMP get_input_for_agent
+no_collision:
+  PLA
+  TAX
+
+  ; check if it collides with player
+  ; if it does, it's a melee attack
+  LDA temp_x
+  CMP agents_x
+  BNE movement
+  LDA temp_y
+  CMP agents_y
+  BNE movement
+
+  ; melee
+  ENQUEUE_ACTION X
+  ENQUEUE_ACTION #action_type::melee
+  ENQUEUE_ACTION #0
+  RTS
+movement:
+  ; unless it hits another agent, then just ignore movement
+  LDY #$1
+@loop:
+  CPY num_agents
+  BCS @exit
+
+  LDA temp_x
+  CMP agents_x, Y
+  BNE @next
+  LDA temp_y
+  CMP agents_y, Y
+  BNE @next
+
+  ; target movement == agent position, bail out
+  RTS
+@next:
+  INY
+  JMP @loop
+@exit:
+  ENQUEUE_ACTION X
+  ENQUEUE_ACTION #action_type::move
+
   RTS
 .endproc
 
@@ -840,8 +978,57 @@ move_action:
   ; TODO implement actions
   LDY action_queue, X ; Y = actor index
   INX_ACTION_QUEUE
+
+  LDA action_queue, X
+  PHA
+  INX_ACTION_QUEUE
   STX action_queue_head
-  
+  PLA
+  TAX
+  LDA action_handlers_h, X
+  PHA
+  LDA action_handlers_l, X
+  PHA
+  RTS
+.endproc
+
+; Y = actor index
+.proc move_handler
+  ; TODO smooth sprite movement
+  LDX agents_direction, Y
+
+  LDA delta_x_lt, X
+  CLC
+  ADC agents_x, Y
+  STA agents_x, Y
+
+  LDA delta_y_lt, X
+  CLC
+  ADC agents_y, Y
+  STA agents_y, Y
+  RTS
+.endproc
+
+.proc melee_handler
+  LDX action_queue_head
+  LDA action_queue, X
+  PHA
+  INX_ACTION_QUEUE
+  STX action_queue_head
+  PLA
+  TAX
+  ; Y = actor, X = victim
+  ; TODO hit
+  RTS
+.endproc
+
+.proc skill_a_handler
+  ; TODO
+  RTS
+.endproc
+
+.proc skill_b_handler
+  ; TODO
   RTS
 .endproc
 
@@ -1034,6 +1221,14 @@ game_state_handlers_h: .hibytes game_state_handlers
 
 playing_state_handlers_l: .lobytes playing_state_handlers
 playing_state_handlers_h: .hibytes playing_state_handlers
+
+.define action_handlers move_handler-1, \
+                        melee_handler-1, \
+                        skill_a_handler-1, \
+                        skill_b_handler-1
+
+action_handlers_l: .lobytes action_handlers
+action_handlers_h: .hibytes action_handlers
 
 palettes:
 .incbin "../assets/bg-palettes.pal"
