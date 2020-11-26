@@ -560,6 +560,9 @@ etc:
   STA agents_str
   STA agents_int
   STA agents_spd
+  LDA #10
+  STA agents_max_hp
+  STA agents_hp
   LDA #direction::right
   STA agents_direction
   LDA #5
@@ -579,28 +582,14 @@ etc:
   STA agents_str, X
   STA agents_int, X
   STA agents_spd, X
+  LDA #10
+  STA agents_max_hp, X
+  STA agents_hp, X
   LDA #direction::right
   STA agents_direction, X
   LDA #5
   STA agents_action_counter, X
-
-  LDX #2
-  LDA #agent_type::mapinguari
-  STA agents_type, X
-  LDA dungeon_down_stairs_x
-  STA agents_x, X
-  LDA dungeon_down_stairs_y
-  STA agents_y, X
   LDA #2
-  STA agents_str, X
-  STA agents_int, X
-  STA agents_spd, X
-  LDA #direction::right
-  STA agents_direction, X
-  LDA #5
-  STA agents_action_counter, X
-
-  LDA #3
   STA num_agents
 
 
@@ -902,11 +891,63 @@ no_collision:
   RTS
 .endproc
 
+; deletes dead agents
+.proc garbage_collector
+  LDA agents_hp
+  BNE :+
+  JSR go_to_game_over
+  RTS
+:
+
+  LDX #$1
+  LDY num_agents
+  DEY
+@loop:
+  CPX num_agents
+  BCS @exit
+
+  LDA agents_hp, X
+  BNE @next
+
+  LDA agents_type, Y
+  STA agents_type, X
+  LDA agents_x, Y
+  STA agents_x, X
+  LDA agents_y, Y
+  STA agents_y, X
+  LDA agents_str, Y
+  STA agents_str, X
+  LDA agents_int, Y
+  STA agents_int, X
+  LDA agents_spd, Y
+  STA agents_spd, X
+  LDA agents_direction, Y
+  STA agents_direction, X
+  LDA agents_hp, Y
+  STA agents_hp, X
+  LDA agents_max_hp, Y
+  STA agents_max_hp, X
+  LDA agents_aux, Y
+  STA agents_aux, X
+  LDA agents_action_counter, Y
+  STA agents_action_counter, X
+  DEY
+  STY num_agents
+  JMP @loop
+@next:
+  INX
+  JMP @loop
+@exit:
+
+  RTS
+.endproc
+
 .proc process_actions_handler
   LDX action_queue_head
   CPX action_queue_tail
   BNE :+
   ; no actions available
+  JSR garbage_collector
   LDA #playing_state::action_counter
   STA current_playing_state
   RTS
@@ -937,12 +978,43 @@ no_collision:
   LDA delta_x_lt, X
   CLC
   ADC agents_x, Y
-  STA agents_x, Y
+  STA temp_x
 
   LDA delta_y_lt, X
   CLC
   ADC agents_y, Y
+  STA temp_y
+
+  LDX #$0
+@loop:
+  LDA agents_x, X
+  CMP temp_x
+  BNE @next
+  LDA agents_y, X
+  CMP temp_y
+  BNE @next
+
+  ; TODO smooth attack?
+  ; TODO maybe attack between enemies?
+  CPX #$0
+  BEQ @melee
+  CPY #$0
+  BEQ @melee
+  RTS
+@melee:
+  JSR melee_attack
+  
+  RTS
+@next:
+  INX
+  CPX num_agents
+  BNE @loop
+
+  LDA temp_x
+  STA agents_x, Y
+  LDA temp_y
   STA agents_y, Y
+
   RTS
 .endproc
 
@@ -953,6 +1025,27 @@ no_collision:
 
 .proc skill_b_handler
   ; TODO
+  RTS
+.endproc
+
+; agent Y causes melee damage to agent X
+.proc melee_attack
+  ; damage = 1d6 + strength
+  LDA agents_str, Y
+  STA temp_acc
+  JSR roll_d6 ; cobbles Y
+  CLC
+  ADC temp_acc
+  STA temp_acc
+
+  ; take from hp
+  LDA agents_hp, X
+  SEC
+  SBC temp_acc
+  BPL :+
+  LDA #0
+:
+  STA agents_hp, X
   RTS
 .endproc
 
