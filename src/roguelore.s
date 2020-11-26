@@ -123,7 +123,6 @@ MAX_ACTIONS = 64 ; must be power of 2
 
 .enum action_type
   move
-  melee
   skill_a
   skill_b
 .endenum
@@ -829,34 +828,6 @@ next:
   ; can't walk through walls, no action happened
   RTS
 :
-  ; move or melee, check for another enemy collision
-  LDY #$1
-@loop:
-  CPY num_agents
-  BCS move_action
-
-  LDA agents_x, Y
-  CMP temp_x
-  BNE @next
-
-  LDA agents_y, Y
-  CMP temp_y
-  BNE @next
-
-  ENQUEUE_ACTION #0
-  ENQUEUE_ACTION #action_type::melee
-  ENQUEUE_ACTION Y
-  LDA #playing_state::agents_input
-  STA current_playing_state
-  
-  RTS
-
-@next:
-  INY
-  JMP @loop
-
-
-move_action:
   ENQUEUE_ACTION #0
   ENQUEUE_ACTION #action_type::move
   LDA #playing_state::agents_input
@@ -925,40 +896,6 @@ no_collision:
   PLA
   TAX
 
-  ; check if it collides with player
-  ; if it does, it's a melee attack
-  LDA temp_x
-  CMP agents_x
-  BNE movement
-  LDA temp_y
-  CMP agents_y
-  BNE movement
-
-  ; melee
-  ENQUEUE_ACTION X
-  ENQUEUE_ACTION #action_type::melee
-  ENQUEUE_ACTION #0
-  RTS
-movement:
-  ; unless it hits another agent, then just ignore movement
-  LDY #$1
-@loop:
-  CPY num_agents
-  BCS @exit
-
-  LDA temp_x
-  CMP agents_x, Y
-  BNE @next
-  LDA temp_y
-  CMP agents_y, Y
-  BNE @next
-
-  ; target movement == agent position, bail out
-  RTS
-@next:
-  INY
-  JMP @loop
-@exit:
   ENQUEUE_ACTION X
   ENQUEUE_ACTION #action_type::move
 
@@ -1006,19 +943,6 @@ movement:
   CLC
   ADC agents_y, Y
   STA agents_y, Y
-  RTS
-.endproc
-
-.proc melee_handler
-  LDX action_queue_head
-  LDA action_queue, X
-  PHA
-  INX_ACTION_QUEUE
-  STX action_queue_head
-  PLA
-  TAX
-  ; Y = actor, X = victim
-  ; TODO hit
   RTS
 .endproc
 
@@ -1223,7 +1147,6 @@ playing_state_handlers_l: .lobytes playing_state_handlers
 playing_state_handlers_h: .hibytes playing_state_handlers
 
 .define action_handlers move_handler-1, \
-                        melee_handler-1, \
                         skill_a_handler-1, \
                         skill_b_handler-1
 
