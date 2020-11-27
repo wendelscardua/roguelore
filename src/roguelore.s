@@ -589,7 +589,27 @@ etc:
   STA agents_direction, X
   LDA #5
   STA agents_action_counter, X
-  LDA #2
+
+  LDX #2
+  LDA #agent_type::boitata
+  STA agents_type, X
+  LDA dungeon_down_stairs_x
+  STA agents_x, X
+  LDA dungeon_down_stairs_y
+  STA agents_y, X
+  LDA #1
+  STA agents_str, X
+  STA agents_int, X
+  STA agents_spd, X
+  LDA #10
+  STA agents_max_hp, X
+  STA agents_hp, X
+  LDA #direction::right
+  STA agents_direction, X
+  LDA #5
+  STA agents_action_counter, X
+
+  LDA #3
   STA num_agents
 
 
