@@ -560,7 +560,7 @@ etc:
   STA agents_str
   STA agents_int
   STA agents_spd
-  LDA #10
+  LDA #50
   STA agents_max_hp
   STA agents_hp
   LDA #direction::right
@@ -932,7 +932,7 @@ no_collision:
   LDA agents_action_counter, Y
   STA agents_action_counter, X
   DEY
-  STY num_agents
+  DEC num_agents
   JMP @loop
 @next:
   INX
