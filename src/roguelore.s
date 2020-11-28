@@ -1,6 +1,7 @@
 .include "constants.inc"
 .include "mmc3-constants.inc"
 .include "header.inc"
+.include "charmap.inc"
 .include "vram-buffer.inc"
 
 .feature force_range
