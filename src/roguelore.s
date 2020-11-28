@@ -773,13 +773,14 @@ next:
   ADC #5
   STA agents_action_counter
 
+  LDA #playing_state::agents_input
+  STA current_playing_state
+
   LDA pressed_buttons
   AND #BUTTON_A
   BEQ :+
   ENQUEUE_ACTION #0
   ENQUEUE_ACTION #action_type::skill_a
-  LDA #playing_state::agents_input
-  STA current_playing_state
   RTS
 :
   LDA pressed_buttons
@@ -787,8 +788,7 @@ next:
   BEQ :+
   ENQUEUE_ACTION #0
   ENQUEUE_ACTION #action_type::skill_b
-  LDA #playing_state::agents_input
-  STA current_playing_state
+  RTS
 :
   
   LDX #$ff
@@ -839,8 +839,6 @@ next:
 :
   ENQUEUE_ACTION #0
   ENQUEUE_ACTION #action_type::move
-  LDA #playing_state::agents_input
-  STA current_playing_state
   
   RTS
 .endproc
