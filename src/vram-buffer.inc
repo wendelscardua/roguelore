@@ -2,40 +2,99 @@
 .import vram_buffer_sp
 .import main_sp
 
+.segment "STACK"
+.import vram_buffer
+
 .segment "CODE"
 .import flush_vram_buffer
 
 .macro switch_to_vram_stack
   TSX
   STX main_sp
-  LDX vram_buffer_sp
+  LDX #0
   TXS
 .endmacro
 
 .macro switch_to_main_stack
-  TSX
-  STX vram_buffer_sp
   LDX main_sp
   TXS
 .endmacro
 
 .macro reset_vram_stack
-  TSX
-  STX main_sp  
-  LDX #$7f
-  STX vram_buffer_sp
-  TXS
-  LDA #0
+  .local reset_loop
   PHA
-  LDX main_sp
-  TXS
+  TXA
+  PHA
+  LDA #0
+  STA vram_buffer_sp
+  STA vram_buffer
+  PLA
+  TAX
+  PLA
 .endmacro
 
 .macro write_tile_to_vram ppu_addr, tile
-  LDA #tile
+  .local no_flush
+  .local wait_nmi
   PHA
-  LDA #.lobyte(ppu_addr)
+  TXA
   PHA
+  LDX vram_buffer_sp
+  CPX #($7f - 4)
+  BCC no_flush
+  LDA old_nmis
+wait_nmi:
+  CMP nmis
+  BEQ wait_nmi
+no_flush:
   LDA #.hibyte(ppu_addr)
+  STA vram_buffer, X
+  INX
+  LDA #.lobyte(ppu_addr)
+  STA vram_buffer, X
+  INX
+  LDA #tile
+  STA vram_buffer, X
+  INX
+  LDA #$00
+  STA vram_buffer, X
+  STX vram_buffer_sp
+  PLA
+  TAX
+  PLA
+.endmacro
+
+.macro write_string_to_vram ppu_addr, str_ptr
+  .local no_flush
+  .local wait_nmi
   PHA
+  TXA
+  PHA
+  LDX vram_buffer_sp
+  CPX #($7f - 5)
+  BCC no_flush
+  LDA old_nmis
+wait_nmi:
+  CMP nmis
+  BEQ wait_nmi
+no_flush:
+  LDA #.hibyte(ppu_addr)
+  ORA #$80
+  STA vram_buffer, X
+  INX
+  LDA #.lobyte(ppu_addr)
+  STA vram_buffer, X
+  INX
+  LDA #.lobyte(str_ptr)
+  STA vram_buffer, X
+  INX
+  LDA #.hibyte(str_ptr)
+  STA vram_buffer, X
+  INX  
+  LDA #$00
+  STA vram_buffer, X
+  STX vram_buffer_sp
+  PLA
+  TAX
+  PLA
 .endmacro

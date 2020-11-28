@@ -346,6 +346,8 @@ clear_ram:
   LDA #%10000000
   STA $a001
 
+  reset_vram_stack
+
   SCREEN_ON
 
   LDX #<music_data
@@ -561,7 +563,7 @@ etc:
   STA agents_str
   STA agents_int
   STA agents_spd
-  LDA #50
+  LDA #4
   STA agents_max_hp
   STA agents_hp
   LDA #direction::right
@@ -579,7 +581,7 @@ etc:
   STA agents_x, X
   LDA dungeon_down_stairs_y
   STA agents_y, X
-  LDA #1
+  LDA #2
   STA agents_str, X
   STA agents_int, X
   STA agents_spd, X
@@ -693,7 +695,8 @@ column_loop:
 .proc go_to_game_over
   LDA #game_states::game_over
   STA game_state
-
+  write_tile_to_vram $2391, $38
+  write_string_to_vram $2382, string_game_over
   RTS
 .endproc
 
@@ -1307,6 +1310,9 @@ flag_per_agent_type:
   .byte $00 ; boitatá
   .byte $01 ; cuca
   .byte $02 ; mapinguari
+
+; strings
+string_game_over: .byte "Saci morreu", $00
 
 ; mask bit for map data
 map_mask:
