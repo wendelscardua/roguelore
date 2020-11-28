@@ -1048,6 +1048,20 @@ no_collision:
 
 ; agent Y causes melee damage to agent X
 .proc melee_attack
+  ; dodge check
+  ; if d6 < X.spd - Y.spd, dodge
+  LDA agents_spd, X
+  SEC
+  SBC agents_spd, Y
+  BMI no_dodge
+  BEQ no_dodge
+  STA temp_acc
+  JSR roll_d6
+  CMP temp_acc
+  BCS no_dodge
+  RTS
+no_dodge:
+
   ; damage = 1d6 + strength
   LDA agents_str, Y
   STA temp_acc
