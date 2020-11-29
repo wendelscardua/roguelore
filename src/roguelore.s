@@ -41,20 +41,6 @@ FT_DPCM_OFF=$c000
   restore_regs
 .endmacro
 
-.macro PRINT string, ppuaddr
-  save_regs
-  LDA #<(string)
-  STA addr_ptr
-  LDA #>(string)
-  STA addr_ptr+1
-  LDA #<(ppuaddr)
-  STA ppu_addr_ptr
-  LDA #>(ppuaddr)
-  STA ppu_addr_ptr+1
-  JSR write_string
-  restore_regs
-.endmacro
-
 .macro SCREEN_OFF
   LDA #$00
   STA PPUCTRL ; disable NMI
@@ -1378,24 +1364,6 @@ reroll_down_stairs:
   LDA temp_acc
   AND map_mask, Y
 
-  RTS
-.endproc
-
-.proc write_string
-  LDA PPUSTATUS
-  LDA ppu_addr_ptr+1
-  STA PPUADDR
-  LDA ppu_addr_ptr
-  STA PPUADDR
-  LDY #$00
-@loop:
-  LDA (addr_ptr), Y
-  CMP #$ff
-  BEQ @exit
-  STA PPUDATA
-  INY
-  JMP @loop
-@exit:
   RTS
 .endproc
 
