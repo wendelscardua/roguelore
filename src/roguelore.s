@@ -1040,25 +1040,22 @@ next:
   ADC delta_y_lt, Y
   STA temp_y
 
-  TXA
-  PHA
-
-  LDX current_dungeon_level
-  LDY dungeon_levels, X
+  LDY current_dungeon_level
+  LDA dungeon_levels, Y
+  TAY
   JSR dungeon_level_collision
   BEQ no_collision
-  PLA
-  TAX
   JMP get_input_for_agent
 no_collision:
-  PLA
-  TAX
-
   ENQUEUE_ACTION X
   ENQUEUE_ACTION #action_type::move
-
   RTS
 .endproc
+
+.macro copy_yx variable
+  LDA variable, Y
+  STA variable, X
+.endmacro
 
 ; deletes dead agents
 .proc garbage_collector
@@ -1079,28 +1076,19 @@ no_collision:
   LDA agents_hp, X
   BNE @next
 
-  LDA agents_type, Y
-  STA agents_type, X
-  LDA agents_x, Y
-  STA agents_x, X
-  LDA agents_y, Y
-  STA agents_y, X
-  LDA agents_str, Y
-  STA agents_str, X
-  LDA agents_int, Y
-  STA agents_int, X
-  LDA agents_spd, Y
-  STA agents_spd, X
-  LDA agents_direction, Y
-  STA agents_direction, X
-  LDA agents_hp, Y
-  STA agents_hp, X
-  LDA agents_max_hp, Y
-  STA agents_max_hp, X
-  LDA agents_aux, Y
-  STA agents_aux, X
-  LDA agents_action_counter, Y
-  STA agents_action_counter, X
+  copy_yx agents_type
+  copy_yx agents_x
+  copy_yx agents_y
+  copy_yx agents_lv
+  copy_yx agents_str
+  copy_yx agents_int
+  copy_yx agents_spd
+  copy_yx agents_direction
+  copy_yx agents_hp
+  copy_yx agents_max_hp
+  copy_yx agents_aux
+  copy_yx agents_action_counter
+
   DEY
   DEC num_agents
   JMP @loop
