@@ -552,7 +552,6 @@ etc:
 
   LDA #0
   STA current_dungeon_level
-  JSR draw_current_dungeon_level
 
   ; initial agent (player)
   LDA #agent_type::saci
@@ -589,7 +588,25 @@ etc:
 
   JSR current_level_setup
 
-  ; turn on screen
+  ; PLAY CanonInD
+
+  RTS
+.endproc
+
+.proc current_level_setup
+  SCREEN_OFF
+
+  ; TODO restore saved enemies if able
+
+  ; generate d6 enemies
+  JSR roll_d6
+  TAX
+loop:
+  JSR spawn_random_enemy
+  DEX
+  BNE loop
+
+  JSR draw_current_dungeon_level
 
   LDA #$20
   STA PPUADDR
@@ -601,21 +618,6 @@ etc:
   VBLANK
 
   SCREEN_ON
-
-  ; PLAY CanonInD
-
-  RTS
-.endproc
-
-.proc current_level_setup
-  ; TODO restore saved enemies if able
-  ; generate d6 enemies
-  JSR roll_d6
-  TAX
-loop:
-  JSR spawn_random_enemy
-  DEX
-  BNE loop
 
   RTS
 .endproc
@@ -740,15 +742,22 @@ row_loop:
   STA temp_x
 column_loop:
   LDX current_dungeon_level
+  JSR _detect_stairs_here
+  BEQ no_stairs
+  LDA #$63
+  STA PPUDATA
+  JMP next
+no_stairs:
   LDY dungeon_levels, X
   JSR dungeon_level_collision
-  BEQ :+
-  LDA #-$10
-:
-  CLC
-  ADC #$72
+  BEQ free_cell
+  LDA #$62
   STA PPUDATA
-
+  JMP next
+free_cell:
+  LDA #$72
+  STA PPUDATA
+next:
   INC temp_x
   LDA temp_x
   CMP #30
@@ -767,6 +776,29 @@ column_loop:
   CMP #20
   BNE row_loop
 
+  RTS
+.endproc
+
+.proc _detect_stairs_here
+  LDA dungeon_up_stairs_x, X
+  CMP temp_x
+  BNE check_down
+  LDA dungeon_up_stairs_y, X
+  CMP temp_y
+  BNE check_down
+  LDA #1
+  RTS
+check_down:
+  LDA dungeon_down_stairs_x, X
+  CMP temp_x
+  BNE no_stairs
+  LDA dungeon_down_stairs_y, X
+  CMP temp_y
+  BNE no_stairs
+  LDA #1
+  RTS
+no_stairs:
+  LDA #0
   RTS
 .endproc
 
