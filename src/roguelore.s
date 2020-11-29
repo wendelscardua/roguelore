@@ -91,6 +91,7 @@ FT_DPCM_OFF=$c000
 MAX_DUNGEON_LEVELS = 20
 MAX_AGENTS = 16
 MAX_ACTIONS = 64 ; must be power of 2
+ACTION_COUNTER = 6
 
 .enum agent_type
   saci
@@ -557,7 +558,7 @@ etc:
   STA agents_hp
   LDA #direction::right
   STA agents_direction
-  LDA #5
+  LDA #(ACTION_COUNTER-1)
   STA agents_action_counter
   LDA dungeon_up_stairs_x
   STA agents_x
@@ -719,6 +720,8 @@ exit_loop:
   STA agents_x, X
   LDA temp_y
   STA agents_y, X
+  LDA #(ACTION_COUNTER - 1)
+  STA agents_action_counter, X
 
   INC num_agents
 
@@ -919,7 +922,7 @@ next:
 :
   LDA agents_action_counter
   CLC
-  ADC #5
+  ADC #ACTION_COUNTER
   STA agents_action_counter
   .ifdef DEBUG
   write_string_to_vram $2382, string_agents_input
@@ -1005,7 +1008,7 @@ next:
 
   ; restore action counter
   CLC
-  ADC #$5
+  ADC #ACTION_COUNTER
   STA agents_action_counter, X
 
   JSR get_input_for_agent
@@ -1049,8 +1052,12 @@ next:
   BEQ no_collision
   JMP get_input_for_agent
 no_collision:
+  TXA
+  PHA
   ENQUEUE_ACTION X
   ENQUEUE_ACTION #action_type::move
+  PLA
+  TAX
   RTS
 .endproc
 
@@ -1351,10 +1358,12 @@ reroll_down_stairs:
   ; check bounds first
   LDA temp_y
   BPL :+
+  LDA #1
   RTS
 :
   CMP #20
   BCC :+
+  LDA #1
   RTS
 :
   ; inside bounds, check map data
