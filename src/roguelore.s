@@ -663,8 +663,6 @@ reroll_level:
   
   ; position
 
-  LDX current_dungeon_level
-  LDY dungeon_levels, X
 reroll_position:
   JSR rand
   AND #%11111
@@ -675,6 +673,8 @@ reroll_position:
   ADC #2
   STA temp_y ; 2..17 (0..19 is harder to roll)
 
+  LDX current_dungeon_level
+  LDY dungeon_levels, X
   JSR dungeon_level_collision
   BNE reroll_position
 
