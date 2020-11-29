@@ -1,0 +1,29 @@
+agent-types:
+  S: 0
+  c: 1
+  m: 2
+  b: 3
+  C: 4
+  M: 5
+enemies-per-level:
+  - SSSSSSSS
+  - cccccccc
+  - ccccccmm
+  - cccccmmm
+  - cccmmmbb
+  - cccmmmbb
+  - ccmmmbbb
+  - ccmmbbbb
+  - ccmmbbbb
+  - ccmmbbbC
+  - cmmmbbbC
+  - cmmbbbCC
+  - cmmbbbCC
+  - cmmbbbCC
+  - cmmbbbCC
+  - cmmbbCCM
+  - cmmbbCCM
+  - cmmbbCCM
+  - cmmbbCCM
+  - cmmbbCCM
+  - cmbbCCMM

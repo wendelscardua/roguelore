@@ -23,6 +23,7 @@ src/${PROJECT}.o: src/${PROJECT}.s src/constants.inc src/mmc3-constants.inc src/
 	src/vram-buffer.inc \
 	src/famitone2.s \
 	assets/maps/*.bin \
+	assets/data/enemy-table.bin \
 	assets/bg-palettes.pal assets/sprite-palettes.pal \
         assets/metasprites.inc \
 	assets/nametables/*.rle \
@@ -34,6 +35,9 @@ src/audio-data.o: src/audio-data.s assets/audio/sfx.s assets/audio/soundtrack.s
 
 assets/maps/%.bin: assets/maps/%.s tools/bitfy.rb
 	ruby tools/bitfy.rb $< $@
+
+assets/data/enemy-table.bin: assets/data/enemy-table.yaml tools/generate-enemy-table.rb
+	ruby tools/generate-enemy-table.rb $< $@
 
 assets/audio/soundtrack.s: assets/audio/soundtrack.txt
 	${TEXT2DATA} $^ -ca65 -allin

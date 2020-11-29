@@ -207,6 +207,7 @@ sprite_counter: .res 1
 agents_type: .res MAX_AGENTS
 agents_x: .res MAX_AGENTS ; (0..31)
 agents_y: .res MAX_AGENTS ; (0..19)
+agents_lv: .res MAX_AGENTS
 agents_str: .res MAX_AGENTS
 agents_int: .res MAX_AGENTS
 agents_spd: .res MAX_AGENTS
@@ -553,76 +554,40 @@ etc:
   STA current_dungeon_level
   JSR draw_current_dungeon_level
 
+  ; initial agent (player)
   LDA #agent_type::saci
   STA agents_type
-  LDA dungeon_up_stairs_x
-  STA agents_x
-  LDA dungeon_up_stairs_y
-  STA agents_y
   LDA #1
+  STA agents_lv
   STA agents_str
   STA agents_int
   STA agents_spd
-  LDA #4
+  JSR roll_d6
+  CLC
+  ADC #10
   STA agents_max_hp
   STA agents_hp
   LDA #direction::right
   STA agents_direction
   LDA #5
   STA agents_action_counter
+  LDA dungeon_up_stairs_x
+  STA agents_x
+  LDA dungeon_up_stairs_y
+  STA agents_y
   LDA #1
   STA num_agents
-
-; debug enemies
-  LDX #1
-  LDA #agent_type::cuca
-  STA agents_type, X
-  LDA dungeon_down_stairs_x
-  STA agents_x, X
-  LDA dungeon_down_stairs_y
-  STA agents_y, X
-  LDA #2
-  STA agents_str, X
-  STA agents_int, X
-  STA agents_spd, X
-  LDA #10
-  STA agents_max_hp, X
-  STA agents_hp, X
-  LDA #direction::right
-  STA agents_direction, X
-  LDA #5
-  STA agents_action_counter, X
-
-  LDX #2
-  LDA #agent_type::boitata
-  STA agents_type, X
-  LDA dungeon_down_stairs_x
-  STA agents_x, X
-  LDA dungeon_down_stairs_y
-  STA agents_y, X
-  LDA #1
-  STA agents_str, X
-  STA agents_int, X
-  STA agents_spd, X
-  LDA #10
-  STA agents_max_hp, X
-  STA agents_hp, X
-  LDA #direction::right
-  STA agents_direction, X
-  LDA #5
-  STA agents_action_counter, X
-
-  LDA #3
-  STA num_agents
-
-
-
+  .ifdef DEBUG
+  write_string_to_vram $2382, string_action_counter
+  .endif
   LDA #playing_state::action_counter
   STA current_playing_state
 
   LDA #0
   STA action_queue_head
   STA action_queue_tail
+
+  JSR current_level_setup
 
   ; turn on screen
 
@@ -639,6 +604,122 @@ etc:
 
   ; PLAY CanonInD
 
+  RTS
+.endproc
+
+.proc current_level_setup
+  ; TODO restore saved enemies if able
+  JSR spawn_random_enemy
+  RTS
+  ; generate 10 + d6 enemies
+  JSR roll_d6
+  ADC #10
+  TAX
+loop:
+  JSR spawn_random_enemy
+  DEX
+  BPL loop
+
+  RTS
+.endproc
+
+.proc spawn_random_enemy
+  save_regs
+
+  ; enemy level will be rand(1.. player.lv + dungeon.lv), capped at 20
+  LDX num_agents
+  LDA agents_lv
+  CLC
+  ADC current_dungeon_level
+  CMP #20
+  BCC :+
+  LDA #20
+:
+  STA temp_acc
+  TAX
+reroll_level:
+  JSR rand
+  AND rand_mask, X
+  CMP temp_acc
+  BCS reroll_level
+  LDX num_agents
+  STA agents_lv, X
+  BNE :+
+  INC agents_lv, X
+:
+
+  ; use lookup table to get appropriate enemy
+  ; level * 8 + random 3 bits = chosen enemy
+  .repeat 3
+  ASL
+  .endrepeat
+  STA temp_acc
+  JSR rand
+  AND #%111
+  ORA temp_acc
+  TAY
+  LDA random_enemy_table, Y
+  STA agents_type, X
+
+  ; stats
+  JSR roll_stats_for_agent
+  
+  ; position
+
+  LDX current_dungeon_level
+  LDY dungeon_levels, X
+reroll_position:
+  JSR rand
+  AND #%11111
+  STA temp_x ; 0..31
+  JSR rand
+  AND #%1111
+  CLC
+  ADC #2
+  STA temp_y ; 2..17 (0..19 is harder to roll)
+
+  JSR dungeon_level_collision
+  BNE reroll_position
+
+  ; check collision with previous agents
+  LDX num_agents
+loop:
+  DEX
+  BMI exit_loop
+  LDA agents_x, X
+  CMP temp_x
+  BNE loop
+  LDA agents_y, X
+  CMP temp_y
+  BNE loop
+  JMP reroll_position
+exit_loop:
+  LDX num_agents
+  LDA temp_x
+  STA agents_x, X
+  LDA temp_y
+  STA agents_y, X
+
+  INC num_agents
+
+  restore_regs
+  RTS
+.endproc
+
+.proc roll_stats_for_agent
+  ; X = current agent
+  ; fixed stats (for now?)
+  LDA agents_type, X
+  TAY
+  LDA default_str, Y
+  STA agents_str, X
+  LDA default_int, Y
+  STA agents_int, X
+  LDA default_spd, Y
+  STA agents_spd, X
+  LDA default_hp, Y
+  STA agents_max_hp, X
+  STA agents_hp, X
   RTS
 .endproc
 
@@ -752,16 +833,31 @@ loop:
   SBC agents_spd, X
   STA agents_action_counter, X
   BPL next
-
+  CPX #$00
+  BEQ player_input_time
+  LDA current_playing_state
+  CMP #playing_state::action_counter
+  BNE next
   LDA #playing_state::agents_input
-  CPX #0
-  BNE :+
-  LDA #playing_state::player_input
-:
   STA current_playing_state
+  JMP next  
+player_input_time:
+  LDA #playing_state::player_input
+  STA current_playing_state
+  .ifdef DEBUG
+  write_string_to_vram $2382, string_player_input
+  .endif
 next:
   DEX
   BPL loop
+  LDA current_playing_state
+  CMP #playing_state::agents_input
+  BEQ :+
+  RTS
+:
+  .ifdef DEBUG
+  write_string_to_vram $2382, string_agents_input
+  .endif
   RTS
 .endproc
 
@@ -775,7 +871,9 @@ next:
   CLC
   ADC #5
   STA agents_action_counter
-
+  .ifdef DEBUG
+  write_string_to_vram $2382, string_agents_input
+  .endif
   LDA #playing_state::agents_input
   STA current_playing_state
 
@@ -866,7 +964,9 @@ next:
   INX
   JMP @loop
 @exit:
-
+  .ifdef DEBUG
+  write_string_to_vram $2382, string_process_actions
+  .endif
   LDA #playing_state::process_actions
   STA current_playing_state
   RTS
@@ -969,6 +1069,9 @@ no_collision:
   BNE :+
   ; no actions available
   JSR garbage_collector
+  .ifdef DEBUG
+  write_string_to_vram $2382, string_action_counter
+  .endif
   LDA #playing_state::action_counter
   STA current_playing_state
   RTS
@@ -1294,6 +1397,32 @@ nametable_main: .incbin "../assets/nametables/main.rle"
 delta_x_lt: .byte 0, 0, -1, 1
 delta_y_lt: .byte -1, 1, 0, 0
 
+; masks for more efficient ranged rand
+rand_mask:
+.byte %00000000 ; <= 0
+.byte %00000001 ; <= 1
+.repeat 2
+.byte %00000011 ; <= 2, 3
+.endrepeat
+.repeat 4
+.byte %00000111 ; <= 4..7
+.endrepeat
+.repeat 8
+.byte %00001111 ; <= 8..15
+.endrepeat
+.repeat 16
+.byte %00011111 ; <= 16..31
+.endrepeat
+.repeat 32
+.byte %00111111 ; <= 32..65
+.endrepeat
+.repeat 64
+.byte %01111111 ; <= 64..127
+.endrepeat
+.repeat 128
+.byte %11111111 ; <= 128..255
+.endrepeat
+
 ; agents stuff
 tile_per_agent_type:
   .byte $00 ; saci
@@ -1310,8 +1439,24 @@ flag_per_agent_type:
   .byte $01 ; cuca
   .byte $02 ; mapinguari
 
+random_enemy_table:
+.incbin "../assets/data/enemy-table.bin"
+
+; default stats per agent
+;                   S   c   m   b   C   M
+default_str: .byte  1,  1,  1,  2,  4,  5
+default_int: .byte  1,  1,  1,  2,  3,  1
+default_spd: .byte  1,  1,  2,  2,  2,  3
+default_hp:  .byte 10, 10, 15, 20, 30, 50
+
 ; strings
 string_game_over: .byte "Saci morreu...", $00
+
+; DEBUG
+string_action_counter:  .byte "Waiting.", $00
+string_player_input:    .byte "Input...", $00
+string_agents_input:    .byte "Thinking", $00
+string_process_actions: .byte "Acting..", $00
 
 ; mask bit for map data
 map_mask:
