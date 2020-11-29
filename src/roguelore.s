@@ -619,6 +619,8 @@ etc:
 
   ; generate d6 enemies
   JSR roll_d6
+  CLC
+  ADC #8
   TAX
 loop:
   JSR spawn_random_enemy
