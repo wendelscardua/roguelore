@@ -1179,6 +1179,10 @@ no_collision:
   CPX num_agents
   BNE @loop
 
+  LDA agents_hp, Y
+  BNE :+
+  RTS
+:
   LDA temp_x
   STA agents_x, Y
   LDA temp_y
