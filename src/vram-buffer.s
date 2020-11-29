@@ -4,8 +4,14 @@
 .export vram_buffer_sp
 .export main_sp
 .export flush_vram_buffer
+.export _tens
+.export _ones
 
 .segment "ZEROPAGE"
+
+.import nmis
+.import old_nmis
+
 vram_buffer_sp: .res 1
 main_sp: .res 1
 str_ptr: .res 2
@@ -36,9 +42,11 @@ loop:
   STA PPUADDR
   PLA
   STA PPUADDR
+mini_loop:
   PLA
+  BEQ loop
   STA PPUDATA
-  JMP loop
+  JMP mini_loop
 string:
   AND #%00111111
   STA PPUADDR
@@ -67,3 +75,14 @@ exit_loop:
 
   RTS
 .endproc
+
+.segment "RODATA"
+
+_tens:
+.repeat 100, i
+  .byte (i / 10) + $10
+.endrepeat
+_ones:
+.repeat 100, i
+  .byte (i .mod 10) + $10
+.endrepeat

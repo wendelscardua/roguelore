@@ -5,6 +5,10 @@
 .segment "STACK"
 .import vram_buffer
 
+.segment "RODATA"
+.import _tens
+.import _ones
+
 .segment "CODE"
 .import flush_vram_buffer
 
@@ -33,14 +37,12 @@
   PLA
 .endmacro
 
+; cobbles X
 .macro write_tile_to_vram ppu_addr, tile
-  .local no_flush
-  .local wait_nmi
-  PHA
-  TXA
-  PHA
+.local wait_nmi
+.local no_flush
   LDX vram_buffer_sp
-  CPX #($7f - 4)
+  CPX #($7f - 5)
   BCC no_flush
   LDA old_nmis
 wait_nmi:
@@ -53,15 +55,48 @@ no_flush:
   LDA #.lobyte(ppu_addr)
   STA vram_buffer, X
   INX
-  LDA #tile
+  LDA tile
+  STA vram_buffer, X
+  INX
+  LDA #$00 ; trailer tile
+  STA vram_buffer, X
+  INX
+  STA vram_buffer, X ; end of stack marker
+  STX vram_buffer_sp
+.endmacro
+
+; input: ppuaddr and 2-digit decimal
+; cobbles X, Y, A
+.macro write_decimal_to_vram ppu_addr, decimal
+.local wait_nmi
+.local no_flush
+  LDX vram_buffer_sp
+  CPX #($7f - 5)
+  BCC no_flush
+  LDA old_nmis
+wait_nmi:
+  CMP nmis
+  BEQ wait_nmi
+no_flush:
+  LDA #.hibyte(ppu_addr)
+  STA vram_buffer, X
+  INX
+  LDA #.lobyte(ppu_addr)
+  STA vram_buffer, X
+  INX
+  LDA decimal
+  TAY
+  LDA _tens, Y  
+  STA vram_buffer, X
+  INX
+  LDA _ones, Y
   STA vram_buffer, X
   INX
   LDA #$00
   STA vram_buffer, X
+  INX
+  STA vram_buffer, X
   STX vram_buffer_sp
-  PLA
-  TAX
-  PLA
 .endmacro
 
 .macro write_string_to_vram ppu_addr, str_ptr

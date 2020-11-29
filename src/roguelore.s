@@ -185,6 +185,9 @@ addr_ptr: .res 2 ; generic address pointer
 ppu_addr_ptr: .res 2
 sprite_ptr: .res 2 ; metasprite pointer
 
+.export nmis
+.export old_nmis
+
 nmis: .res 1
 old_nmis: .res 1
 
@@ -562,6 +565,9 @@ etc:
   STA agents_y
   LDA #1
   STA num_agents
+
+  JSR refresh_stats
+
   .ifdef DEBUG
   write_string_to_vram $2382, string_action_counter
   .endif
@@ -576,6 +582,33 @@ etc:
 
   ; PLAY CanonInD
 
+  RTS
+.endproc
+
+.proc refresh_stats
+  LDA agents_str
+  CLC
+  ADC #$10
+  STA temp_acc
+  write_tile_to_vram $232f, temp_acc
+  LDA agents_int
+  CLC
+  ADC #$10
+  STA temp_acc
+  write_tile_to_vram $234f, temp_acc
+  LDA agents_spd
+  CLC
+  ADC #$10
+  STA temp_acc
+  write_tile_to_vram $236f, temp_acc
+  write_decimal_to_vram $2308, agents_hp
+  write_decimal_to_vram $230e, agents_max_hp
+  write_decimal_to_vram $233c, agents_lv
+  LDA current_dungeon_level
+  CLC
+  ADC #1
+  STA temp_acc
+  write_decimal_to_vram $237c, temp_acc
   RTS
 .endproc
 
@@ -1029,6 +1062,7 @@ no_collision:
 
 ; deletes dead agents
 .proc garbage_collector
+  JSR refresh_stats
   LDA agents_hp
   BNE :+
   JSR go_to_game_over
