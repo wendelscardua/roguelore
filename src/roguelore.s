@@ -1306,6 +1306,17 @@ reroll_down_stairs:
 ; cobbles: Y, temp_acc
 ; return: flag nonzero if collided with dungeon
 .proc dungeon_level_collision
+  ; check bounds first
+  LDA temp_y
+  BPL :+
+  RTS
+:
+  CMP #20
+  BCC :+
+  RTS
+:
+  ; inside bounds, check map data
+
   LDA map_data_ptr_l, Y
   STA addr_ptr
   LDA map_data_ptr_h, Y
