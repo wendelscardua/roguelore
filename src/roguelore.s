@@ -609,16 +609,13 @@ etc:
 
 .proc current_level_setup
   ; TODO restore saved enemies if able
-  JSR spawn_random_enemy
-  RTS
-  ; generate 10 + d6 enemies
+  ; generate d6 enemies
   JSR roll_d6
-  ADC #10
   TAX
 loop:
   JSR spawn_random_enemy
   DEX
-  BPL loop
+  BNE loop
 
   RTS
 .endproc
@@ -640,13 +637,13 @@ loop:
 reroll_level:
   JSR rand
   AND rand_mask, X
+  BEQ reroll_level
   CMP temp_acc
+  BEQ :+
   BCS reroll_level
+:
   LDX num_agents
   STA agents_lv, X
-  BNE :+
-  INC agents_lv, X
-:
 
   ; use lookup table to get appropriate enemy
   ; level * 8 + random 3 bits = chosen enemy
