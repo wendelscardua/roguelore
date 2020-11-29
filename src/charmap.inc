@@ -4,7 +4,8 @@
 .endrepeat
 
 .charmap $20, $1a
+.charmap $2e, $0e
 
-.repeat 10
+.repeat 10, i
   .charmap $30 + i, $10 + i
 .endrepeat

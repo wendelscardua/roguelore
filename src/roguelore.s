@@ -695,8 +695,7 @@ column_loop:
 .proc go_to_game_over
   LDA #game_states::game_over
   STA game_state
-  write_tile_to_vram $2391, $38
-  write_string_to_vram $2382, string_game_over
+  write_string_to_vram $2302, string_game_over
   RTS
 .endproc
 
@@ -1312,7 +1311,7 @@ flag_per_agent_type:
   .byte $02 ; mapinguari
 
 ; strings
-string_game_over: .byte "Saci morreu", $00
+string_game_over: .byte "Saci morreu...", $00
 
 ; mask bit for map data
 map_mask:
