@@ -768,7 +768,6 @@ column_loop:
   LDX current_dungeon_level
   JSR _detect_stairs_here
   BEQ no_stairs
-  LDA #$63
   STA PPUDATA
   JMP next
 no_stairs:
@@ -810,7 +809,7 @@ next:
   LDA dungeon_up_stairs_y, X
   CMP temp_y
   BNE check_down
-  LDA #1
+  LDA #$73
   RTS
 check_down:
   LDA dungeon_down_stairs_x, X
@@ -819,7 +818,7 @@ check_down:
   LDA dungeon_down_stairs_y, X
   CMP temp_y
   BNE no_stairs
-  LDA #1
+  LDA #$63
   RTS
 no_stairs:
   LDA #0
