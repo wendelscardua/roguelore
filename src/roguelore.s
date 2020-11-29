@@ -575,10 +575,6 @@ etc:
   LDA #playing_state::action_counter
   STA current_playing_state
 
-  LDA #0
-  STA action_queue_head
-  STA action_queue_tail
-
   JSR current_level_setup
 
   ; PLAY CanonInD
@@ -616,7 +612,15 @@ etc:
 .proc current_level_setup
   SCREEN_OFF
 
+  ; reset action queue
+  LDA #0
+  STA action_queue_head
+  STA action_queue_tail
+
   ; TODO restore saved enemies if able
+
+  LDA #1
+  STA num_agents
 
   ; generate d6 enemies
   JSR roll_d6
@@ -1196,8 +1200,63 @@ no_collision:
   RTS
 .endproc
 
+; Y = agent index
 .proc skill_b_handler
-  ; TODO
+  ; for the player, this is an idle or interact skill
+  CPY #0
+  BEQ :+
+  RTS ; TODO - maybe add skils for enemies?
+:
+
+  LDX current_dungeon_level
+  ; check if down stairs
+  LDA agents_x, Y
+  CMP dungeon_down_stairs_x, X
+  BNE no_down
+  LDA agents_y, Y
+  CMP dungeon_down_stairs_y, X
+  BNE no_down
+
+  JSR go_down
+  RTS
+
+no_down:
+  ; check if up stairs
+  LDA agents_x, Y
+  CMP dungeon_up_stairs_x, X
+  BNE no_up
+  LDA agents_y, Y
+  CMP dungeon_up_stairs_y, X
+  BNE no_up
+
+  JSR go_up
+  RTS
+no_up:
+  ; idle
+  RTS
+.endproc
+
+.proc go_down
+  ; TODO last level gives artifact
+  INC current_dungeon_level
+  LDX current_dungeon_level
+  LDA dungeon_up_stairs_x, X
+  STA agents_x
+  LDA dungeon_up_stairs_y, X
+  STA agents_y
+  JSR current_level_setup
+  RTS
+.endproc
+
+.proc go_up
+  ; TODO first level ends game
+  DEC current_dungeon_level
+  LDX current_dungeon_level
+  LDA dungeon_down_stairs_x, X
+  STA agents_x
+  LDA dungeon_down_stairs_y, X
+  STA agents_y
+  JSR current_level_setup
   RTS
 .endproc
 
