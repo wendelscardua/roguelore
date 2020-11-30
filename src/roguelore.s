@@ -1262,6 +1262,95 @@ no_up:
   RTS
 .endproc
 
+.macro save_agent_var variable
+.local loop
+.local exit_loop
+  LDX #1
+loop:
+  CPX num_agents
+  BEQ exit_loop
+  LDA variable, X
+  STA (addr_ptr), Y
+  INY
+  INX
+  JMP loop
+exit_loop:
+.endmacro
+
+.proc save_agents
+  LDX current_dungeon_level
+  LDA dungeon_level_agents_ptr_l, X
+  STA addr_ptr
+  LDA dungeon_level_agents_ptr_h, X
+  STA addr_ptr+1
+  LDY #0
+
+  LDA num_agents
+  STA (addr_ptr), Y
+  INY
+
+  save_agent_var agents_type
+  save_agent_var agents_x
+  save_agent_var agents_y
+  save_agent_var agents_lv
+  save_agent_var agents_str
+  save_agent_var agents_int
+  save_agent_var agents_spd
+  save_agent_var agents_direction
+  save_agent_var agents_hp
+  save_agent_var agents_max_hp
+  save_agent_var agents_aux
+  save_agent_var agents_action_counter
+
+  RTS
+.endproc
+
+.macro load_agent_var variable
+.local loop
+.local exit_loop
+  LDX #1
+loop:
+  CPX num_agents
+  BEQ exit_loop
+  LDA (addr_ptr), Y
+  STA variable, X
+  INY
+  INX
+  JMP loop
+exit_loop:
+.endmacro
+
+; returns not-zero if something was loaded
+.proc load_agents
+  LDX current_dungeon_level
+  LDA dungeon_level_agents_ptr_l, X
+  STA addr_ptr
+  LDA dungeon_level_agents_ptr_h, X
+  STA addr_ptr+1
+  LDY #0
+
+  LDA (addr_ptr), Y
+  BNE :+
+  RTS
+:
+  STA num_agents
+  INY
+
+  load_agent_var agents_type
+  load_agent_var agents_x
+  load_agent_var agents_y
+  load_agent_var agents_lv
+  load_agent_var agents_str
+  load_agent_var agents_int
+  load_agent_var agents_spd
+  load_agent_var agents_direction
+  load_agent_var agents_hp
+  load_agent_var agents_max_hp
+  load_agent_var agents_aux
+  load_agent_var agents_action_counter
+  RTS
+.endproc
+
 ; agent Y causes melee damage to agent X
 .proc melee_attack
   ; dodge check
