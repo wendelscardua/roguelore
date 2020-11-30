@@ -770,6 +770,9 @@ exit_loop:
   LDA agents_lv, X
   STA temp_acc
   LDA default_lv, Y
+  CMP temp_acc
+  BCS exit_loop ; if target lv < default, use target
+  ; else, agent will level up until it reaches target
   STA agents_lv, X
 
 loop:
