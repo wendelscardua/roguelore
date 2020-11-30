@@ -856,6 +856,8 @@ next:
   LDA #$73
   RTS
 check_down:
+  CPX #(MAX_DUNGEON_LEVELS-1)
+  BEQ no_stairs
   LDA dungeon_down_stairs_x, X
   CMP temp_x
   BNE no_stairs
