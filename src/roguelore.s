@@ -1414,7 +1414,7 @@ no_dodge:
   BEQ :+
   RTS
 :
-  save_regs
+
   LDA agents_lv, X
   TAX
   LDA lv_to_xp_l_lt, X
@@ -1439,7 +1439,92 @@ no_dodge:
 :
   STA player_xp+1
 
-  restore_regs
+  ; check if leveled up
+  LDX agents_lv
+  CPX #20
+  BNE :+
+  RTS
+:
+
+  LDA player_xp+2
+  CMP xp_per_level_2, X
+  BEQ check_1
+  BCS level_up
+  RTS
+check_1:
+  LDA player_xp+1
+  CMP xp_per_level_1, X
+  BEQ check_0
+  BCS level_up
+  RTS
+check_0:
+  LDA player_xp
+  CMP xp_per_level_0, X
+  BCS level_up
+  RTS
+level_up:
+  INC agents_lv
+
+  ; add some max hp
+  JSR roll_d6
+  CLC
+  ADC agents_max_hp
+  STA agents_max_hp
+
+  ; add random buff
+  JSR rand
+  AND #%11
+
+  BEQ add_str
+  CMP #1
+  BEQ add_int
+  CMP #2
+  BEQ add_spd
+add_hp:
+  JSR roll_d6
+  CLC
+  ADC agents_max_hp
+  STA agents_max_hp
+  JMP check_caps
+add_str:
+  INC agents_str
+  JMP check_caps
+add_int:
+  INC agents_int
+  JMP check_caps
+add_spd:
+  INC agents_spd
+  ; JMP check_caps
+check_caps:
+  LDA agents_str
+  CMP #7
+  BCC :+
+  LDA #6
+  STA agents_str
+  INC agents_max_hp
+:
+  LDA agents_int
+  CMP #7
+  BCC :+
+  LDA #6
+  STA agents_int
+  INC agents_max_hp
+:
+  LDA agents_spd
+  CMP #7
+  BCC :+
+  LDA #6
+  STA agents_spd
+  INC agents_max_hp
+:
+  LDA agents_max_hp
+  CMP #100
+  BCC restore_hp
+  LDA #99
+  STA agents_max_hp
+restore_hp:
+  LDA agents_max_hp
+  STA agents_hp
   RTS
 .endproc
 
@@ -1697,6 +1782,96 @@ lv_to_xp_l_lt:
 .repeat 21, i
 .byte (i*i + 1) .mod 100
 .endrepeat
+
+; exp for each level
+; 000000
+; 000010
+; 000020
+; 000030
+; 000050
+; 000080
+; 000130
+; 000210
+; 000340
+; 000550
+; 000890
+; 001440
+; 002330
+; 003770
+; 006100
+; 009870
+; 015970
+; 025840
+; 041810
+; 067650
+; 109460
+xp_per_level_2:
+.byte 00
+.byte 00
+.byte 00
+.byte 00
+.byte 00
+.byte 00
+.byte 00
+.byte 00
+.byte 00
+.byte 00
+.byte 00
+.byte 00
+.byte 00
+.byte 00
+.byte 00
+.byte 00
+.byte 01
+.byte 02
+.byte 04
+.byte 06
+.byte 10
+xp_per_level_1:
+.byte 00
+.byte 00
+.byte 00
+.byte 00
+.byte 00
+.byte 00
+.byte 01
+.byte 02
+.byte 03
+.byte 05
+.byte 08
+.byte 14
+.byte 23
+.byte 37
+.byte 61
+.byte 98
+.byte 59
+.byte 58
+.byte 18
+.byte 76
+.byte 94
+xp_per_level_0:
+.byte 00
+.byte 10
+.byte 20
+.byte 30
+.byte 50
+.byte 80
+.byte 30
+.byte 10
+.byte 40
+.byte 50
+.byte 90
+.byte 40
+.byte 30
+.byte 70
+.byte 00
+.byte 70
+.byte 70
+.byte 40
+.byte 10
+.byte 50
+.byte 60
+
 
 ; agents stuff
 tile_per_agent_type:
