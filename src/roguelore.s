@@ -1210,6 +1210,35 @@ no_collision:
   LDA temp_y
   STA agents_y, Y
 
+  JSR regenerate_hp
+  RTS
+.endproc
+
+; Y = agent index
+.proc regenerate_hp
+  LDA agents_hp, Y
+  BNE :+
+  RTS
+:
+  CMP agents_max_hp, Y
+  BNE :+
+  RTS
+:
+  STY temp_y
+  JSR roll_d6
+  CMP #5
+  BCS regen
+  RTS
+regen:
+  LDY temp_y
+  LDA agents_hp, Y
+  CLC
+  ADC #1
+  CMP agents_max_hp, Y
+  BCC no_regen_cap
+  LDA agents_max_hp, Y
+no_regen_cap:
+  STA agents_hp, Y
   RTS
 .endproc
 
@@ -1382,17 +1411,19 @@ exit_loop:
   BMI no_dodge
   BEQ no_dodge
   STA temp_acc
+  STY temp_y
   JSR roll_d6
+  LDY temp_y
   CMP temp_acc
   BCS no_dodge
   RTS
 no_dodge:
-
   ; damage = 1d6 + strength
   LDA agents_str, Y
   STA temp_acc
   STY temp_y
-  JSR roll_d6 ; cobbles Y
+  JSR roll_d6
+  LDY temp_y
   CLC
   ADC temp_acc
   STA temp_acc
@@ -1409,7 +1440,7 @@ no_dodge:
   RTS
 :
   ; gain xp from kill if player
-  LDA temp_y
+  CPY #$0
   BEQ :+
   RTS
 :
