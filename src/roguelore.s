@@ -754,7 +754,7 @@ exit_loop:
 
 .proc roll_stats_for_agent
   ; X = current agent
-  ; fixed stats (for now?)
+
   LDA agents_type, X
   TAY
   LDA default_str, Y
@@ -766,6 +766,19 @@ exit_loop:
   LDA default_hp, Y
   STA agents_max_hp, X
   STA agents_hp, X
+
+  LDA agents_lv, X
+  STA temp_acc
+  LDA default_lv, Y
+  STA agents_lv, X
+
+loop:
+  LDA agents_lv, X
+  CMP temp_acc
+  BCS exit_loop
+  JSR level_up_agent
+  JMP loop
+exit_loop:
   RTS
 .endproc
 
@@ -1937,6 +1950,7 @@ default_str: .byte  1,  1,  1,  2,  4,  5
 default_int: .byte  1,  1,  1,  2,  3,  1
 default_spd: .byte  1,  1,  2,  2,  2,  3
 default_hp:  .byte 10, 10, 15, 20, 30, 50
+default_lv:  .byte  1,  3,  3,  5,  8, 12
 
 ; strings
 string_game_over: .byte "Saci morreu...", $00
