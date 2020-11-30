@@ -1493,13 +1493,22 @@ check_0:
   BCS level_up
   RTS
 level_up:
-  INC agents_lv
+  LDX #0
+  JSR level_up_agent
+  RTS
+.endproc
+
+; increases agent level
+; input X = agent index
+; cobbles Y
+.proc level_up_agent
+  INC agents_lv, X
 
   ; add some max hp
   JSR roll_d6
   CLC
-  ADC agents_max_hp
-  STA agents_max_hp
+  ADC agents_max_hp, X
+  STA agents_max_hp, X
 
   ; add random buff
   JSR rand
@@ -1513,48 +1522,48 @@ level_up:
 add_hp:
   JSR roll_d6
   CLC
-  ADC agents_max_hp
-  STA agents_max_hp
+  ADC agents_max_hp, X
+  STA agents_max_hp, X
   JMP check_caps
 add_str:
-  INC agents_str
+  INC agents_str, X
   JMP check_caps
 add_int:
-  INC agents_int
+  INC agents_int, X
   JMP check_caps
 add_spd:
-  INC agents_spd
+  INC agents_spd, X
   ; JMP check_caps
 check_caps:
-  LDA agents_str
+  LDA agents_str, X
   CMP #7
   BCC :+
   LDA #6
-  STA agents_str
-  INC agents_max_hp
+  STA agents_str, X
+  INC agents_max_hp, X
 :
-  LDA agents_int
+  LDA agents_int, X
   CMP #7
   BCC :+
   LDA #6
-  STA agents_int
-  INC agents_max_hp
+  STA agents_int, X
+  INC agents_max_hp, X
 :
-  LDA agents_spd
+  LDA agents_spd, X
   CMP #7
   BCC :+
   LDA #6
-  STA agents_spd
-  INC agents_max_hp
+  STA agents_spd, X
+  INC agents_max_hp, X
 :
-  LDA agents_max_hp
+  LDA agents_max_hp, X
   CMP #100
   BCC restore_hp
   LDA #99
-  STA agents_max_hp
+  STA agents_max_hp, X
 restore_hp:
-  LDA agents_max_hp
-  STA agents_hp
+  LDA agents_max_hp, X
+  STA agents_hp, X
   RTS
 .endproc
 
