@@ -1311,7 +1311,12 @@ no_up:
 .endproc
 
 .proc go_down
-  ; TODO last level gives artifact
+  ; last level has the grandpa's cap instead of "down stairs"
+  LDA current_dungeon_level
+  CMP #(MAX_DUNGEON_LEVELS-1)
+  BNE :+
+  RTS
+:
 
   JSR save_agents
   INC current_dungeon_level
