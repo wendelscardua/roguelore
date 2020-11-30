@@ -245,7 +245,9 @@ current_playing_state: .res 1
 action_queue: .res MAX_ACTIONS
 
 .segment "PRGRAM"
-
+.repeat 20, dungeon_level
+.ident(.concat("dungeon_level_", .sprintf("%d", dungeon_level + 1) , "_agents")): .res 256
+.endrepeat
 
 .segment "CODE"
 
@@ -505,6 +507,8 @@ etc:
 .endproc
 
 .proc go_to_playing
+  SCREEN_OFF
+
   LDA #game_states::playing
   STA game_state
 
@@ -517,8 +521,6 @@ etc:
   INX
   .endrepeat
   BNE :-
-
-  SCREEN_OFF
 
   JSR load_palettes
 
@@ -1408,6 +1410,20 @@ reroll_down_stairs:
   INX
   CPX #MAX_DUNGEON_LEVELS
   BNE dungeon_level_loop
+
+  ; reset saved agents
+  LDX #(MAX_DUNGEON_LEVELS-1)
+@loop:
+  LDA dungeon_level_agents_ptr_l, X
+  STA addr_ptr
+  LDA dungeon_level_agents_ptr_h, X
+  STA addr_ptr+1
+  LDY #0
+  LDA #0
+  STA (addr_ptr), Y
+  DEX
+  BPL @loop
+
   RTS
 .endproc
 
@@ -1569,15 +1585,28 @@ map_mask:
 
 ; map data
 
-.define map_data_pointers map_data_001, map_data_002, map_data_003, map_data_004, \
-                          map_data_005, map_data_006, map_data_007, map_data_008, \
-                          map_data_009, map_data_010, map_data_011, map_data_012, \
-                          map_data_013, map_data_014, map_data_015, map_data_016
-map_data_ptr_l: .lobytes map_data_pointers
-map_data_ptr_h: .hibytes map_data_pointers
+map_data_ptr_l:
+.repeat 16, map_index
+  .byte .lobyte(.ident(.concat("map_data_", .sprintf("%03d", map_index + 1))))
+.endrepeat
+
+map_data_ptr_h:
+.repeat 16, map_index
+  .byte .hibyte(.ident(.concat("map_data_", .sprintf("%03d", map_index + 1))))
+.endrepeat
 
 .repeat 16, map_index
 .ident(.concat("map_data_", .sprintf("%03d", map_index + 1))): .incbin .concat("../assets/maps/", .sprintf("%03d", map_index + 1), ".bin")
+.endrepeat
+
+; saved agents slot pointers
+dungeon_level_agents_ptr_l:
+.repeat 20, dungeon_level
+  .byte .lobyte(.ident(.concat("dungeon_level_", .sprintf("%d", dungeon_level + 1) , "_agents")))
+.endrepeat
+dungeon_level_agents_ptr_h:
+.repeat 20, dungeon_level
+  .byte .hibyte(.ident(.concat("dungeon_level_", .sprintf("%d", dungeon_level + 1) , "_agents")))
 .endrepeat
 
 ; masks for faster bounded rng
