@@ -1226,7 +1226,10 @@ no_collision:
   LDA temp_y
   STA agents_y, Y
 
+  CPY #$0
+  BNE :+
   JSR regenerate_hp
+:
   RTS
 .endproc
 
@@ -1296,6 +1299,7 @@ no_down:
   RTS
 no_up:
   ; idle
+  JSR regenerate_hp
   RTS
 .endproc
 
