@@ -210,6 +210,9 @@ num_agents: .res 1
 
 ; experience, each byte = 2 decimal digits
 player_xp: .res 3
+; flag to tell if player has the "amulet of Yendor"
+; (in this case his grandpa's cap)
+yendor: .res 1
 
 action_queue_head: .res 1
 action_queue_tail: .res 1
@@ -574,6 +577,8 @@ etc:
   STA player_xp
   STA player_xp+1
   STA player_xp+2
+
+  STA yendor
 
   LDA #1
   STA num_agents
