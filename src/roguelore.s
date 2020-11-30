@@ -619,7 +619,8 @@ etc:
   STA action_queue_head
   STA action_queue_tail
 
-  ; TODO restore saved enemies if able
+  JSR load_agents
+  BNE skip_spawn
 
   LDA #1
   STA num_agents
@@ -633,6 +634,8 @@ loop:
   JSR spawn_random_enemy
   DEX
   BNE loop
+
+skip_spawn:
 
   JSR draw_current_dungeon_level
 
@@ -1240,6 +1243,8 @@ no_up:
 
 .proc go_down
   ; TODO last level gives artifact
+
+  JSR save_agents
   INC current_dungeon_level
   LDX current_dungeon_level
   LDA dungeon_up_stairs_x, X
@@ -1252,6 +1257,8 @@ no_up:
 
 .proc go_up
   ; TODO first level ends game
+
+  JSR save_agents
   DEC current_dungeon_level
   LDX current_dungeon_level
   LDA dungeon_down_stairs_x, X
@@ -1348,6 +1355,7 @@ exit_loop:
   load_agent_var agents_max_hp
   load_agent_var agents_aux
   load_agent_var agents_action_counter
+  LDA #1
   RTS
 .endproc
 
