@@ -1828,11 +1828,11 @@ rand_mask:
 ; level to exp look up
 lv_to_xp_h_lt:
 .repeat 21, i
-.byte (i*i + 1) / 100
+.byte ((i-1)*(i-1) + 1) / 100
 .endrepeat
 lv_to_xp_l_lt:
 .repeat 21, i
-.byte (i*i + 1) .mod 100
+.byte ((i-1)*(i-1) + 1) .mod 100
 .endrepeat
 
 ; exp for each level
