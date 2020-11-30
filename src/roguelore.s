@@ -1597,7 +1597,7 @@ loop:
   ASL
   .endrepeat
   CLC
-  ADC #$10
+  ADC #$0f
   STA oam_sprites+Sprite::ycoord, X
 
   TXA
