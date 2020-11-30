@@ -208,6 +208,9 @@ agents_aux: .res MAX_AGENTS
 agents_action_counter: .res MAX_AGENTS
 num_agents: .res 1
 
+; experience, each byte = 2 decimal digits
+player_xp: .res 3
+
 action_queue_head: .res 1
 action_queue_tail: .res 1
 
@@ -566,6 +569,12 @@ etc:
   STA agents_x
   LDA dungeon_up_stairs_y
   STA agents_y
+
+  LDA #0
+  STA player_xp
+  STA player_xp+1
+  STA player_xp+2
+
   LDA #1
   STA num_agents
 
@@ -603,6 +612,11 @@ etc:
   write_decimal_to_vram $2308, agents_hp
   write_decimal_to_vram $230e, agents_max_hp
   write_decimal_to_vram $233c, agents_lv
+
+  write_decimal_to_vram $2358, player_xp+2
+  write_decimal_to_vram $235a, player_xp+1
+  write_decimal_to_vram $235c, player_xp
+
   LDA current_dungeon_level
   CLC
   ADC #1
@@ -1378,6 +1392,7 @@ no_dodge:
   ; damage = 1d6 + strength
   LDA agents_str, Y
   STA temp_acc
+  STY temp_y
   JSR roll_d6 ; cobbles Y
   CLC
   ADC temp_acc
@@ -1391,6 +1406,40 @@ no_dodge:
   LDA #0
 :
   STA agents_hp, X
+  BEQ :+
+  RTS
+:
+  ; gain xp from kill if player
+  LDA temp_y
+  BEQ :+
+  RTS
+:
+  save_regs
+  LDA agents_lv, X
+  TAX
+  LDA lv_to_xp_l_lt, X
+  CLC
+  ADC player_xp
+  CMP #100
+  BCC :+
+  SEC
+  SBC #100
+  INC player_xp+1
+:
+  STA player_xp
+
+  LDA lv_to_xp_h_lt, X
+  CLC
+  ADC player_xp+1
+  CMP #100
+  BCC :+
+  SEC
+  SBC #100
+  INC player_xp+2
+:
+  STA player_xp+1
+
+  restore_regs
   RTS
 .endproc
 
@@ -1637,6 +1686,16 @@ rand_mask:
 .endrepeat
 .repeat 128
 .byte %11111111 ; <= 128..255
+.endrepeat
+
+; level to exp look up
+lv_to_xp_h_lt:
+.repeat 21, i
+.byte (i*i + 1) / 100
+.endrepeat
+lv_to_xp_l_lt:
+.repeat 21, i
+.byte (i*i + 1) .mod 100
 .endrepeat
 
 ; agents stuff
