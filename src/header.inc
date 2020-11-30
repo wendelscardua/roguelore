@@ -21,6 +21,6 @@
 ;      ||||++--- If equal to 2, flags 8-15 are in NES 2.0 format
 ;      ++++----- Upper nybble of mapper number
 
-.byte $00        ; PRG-RAM size
+.byte $01        ; PRG-RAM size
 
 .byte $00        ; NTSC format
