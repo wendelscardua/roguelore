@@ -707,7 +707,7 @@ reroll_level:
 
   ; stats
   JSR roll_stats_for_agent
-  
+
   ; position
 
 reroll_position:
@@ -915,7 +915,7 @@ loop:
   BNE next
   LDA #playing_state::agents_input
   STA current_playing_state
-  JMP next  
+  JMP next
 player_input_time:
   LDA #playing_state::player_input
   STA current_playing_state
@@ -966,7 +966,7 @@ next:
   ENQUEUE_ACTION #action_type::skill_b
   RTS
 :
-  
+
   LDX #$ff
   STA temp_acc
   LDA pressed_buttons
@@ -1015,7 +1015,7 @@ next:
 :
   ENQUEUE_ACTION #0
   ENQUEUE_ACTION #action_type::move
-  
+
   RTS
 .endproc
 
@@ -1127,7 +1127,6 @@ no_collision:
   INX
   JMP @loop
 @exit:
-
   RTS
 .endproc
 
@@ -1195,7 +1194,7 @@ no_collision:
   RTS
 @melee:
   JSR melee_attack
-  
+
   RTS
 @next:
   INX
