@@ -705,14 +705,15 @@ skip_spawn:
 .proc spawn_random_enemy
   save_regs
 
-  ; enemy level will be rand(1.. player.lv + dungeon.lv), capped at 20
+  ; enemy level will be rand(1.. max(player.lv + dungeon.lv)), capped at 20
   LDX num_agents
-  LDA agents_lv
+
+  LDA current_dungeon_level
   CLC
-  ADC current_dungeon_level
-  CMP #20
-  BCC :+
-  LDA #20
+  ADC #1
+  CMP agents_lv
+  BCS :+
+  LDA agents_lv
 :
   STA temp_acc
   TAX
