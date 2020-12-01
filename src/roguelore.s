@@ -909,6 +909,8 @@ no_stairs:
   STX sprite_counter
   ; TODO render projectiles
   JSR render_agents
+  JSR maybe_render_yendor
+
   LDX sprite_counter
   LDA #$F0
 :
@@ -917,6 +919,61 @@ no_stairs:
   INX
   .endrepeat
   BNE :-
+  RTS
+.endproc
+
+.proc maybe_render_yendor
+  LDX current_dungeon_level
+  CPX #(MAX_DUNGEON_LEVELS - 1)
+  BEQ last_dungeon
+  RTS
+last_dungeon:
+  LDA yendor
+  BEQ no_yendor
+  LDA #19
+  STA temp_x
+  LDA #26
+  STA temp_y
+  JMP render
+no_yendor:
+  LDA dungeon_down_stairs_x, X
+  STA temp_x
+  LDA dungeon_down_stairs_y, X
+  STA temp_y
+render:
+  LDX sprite_counter
+
+  LDA temp_x
+  .repeat 3
+  ASL
+  .endrepeat
+  STA oam_sprites+Sprite::xcoord, X
+  LDA temp_y
+  .repeat 3
+  ASL
+  .endrepeat
+  CLC
+  ADC #$0f
+  STA oam_sprites+Sprite::ycoord, X
+  LDA rng_seed
+  AND #%1
+  BEQ :+
+  DEC oam_sprites+Sprite::ycoord, X
+:
+  LDA rng_seed+1
+  AND #%1
+  BEQ :+
+  INC oam_sprites+Sprite::ycoord, X
+:
+  LDA #$12 ; cap tile
+  STA oam_sprites+Sprite::tile, X
+  LDA #$02
+  STA oam_sprites+Sprite::flag, X
+
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  STX sprite_counter
   RTS
 .endproc
 
