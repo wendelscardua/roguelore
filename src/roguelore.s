@@ -687,6 +687,21 @@ skip_spawn:
   RTS
 .endproc
 
+.proc maybe_add_enemy
+  LDA num_agents
+  CMP #MAX_AGENTS
+  BCC :+
+  RTS
+:
+  JSR rand
+  AND #%11111
+  BEQ :+
+  RTS
+:
+  JSR spawn_random_enemy
+  RTS
+.endproc
+
 .proc spawn_random_enemy
   save_regs
 
@@ -1430,6 +1445,7 @@ agent_actions:
   .ifdef DEBUG
   write_string_to_vram $2382, string_action_counter
   .endif
+  JSR maybe_add_enemy
   LDA #playing_state::action_counter
   STA current_playing_state
   RTS
