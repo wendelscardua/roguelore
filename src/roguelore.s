@@ -1565,6 +1565,21 @@ no_regen_cap:
   RTS
 .endproc
 
+.proc regenerate_ember
+  LDA embers
+  CMP agents_int
+  BCC :+
+  RTS
+:
+  JSR roll_d6
+  CMP #5
+  BCS regen
+  RTS
+regen:
+  INC embers
+  RTS
+.endproc
+
 .proc skill_a_handler
   ; for the player, this shoots an ember projectile
   CPY #0
@@ -1800,6 +1815,7 @@ no_dodge:
 :
 
   JSR gain_xp_from_kill
+  JSR regenerate_ember
   RTS
 .endproc
 
