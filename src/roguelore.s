@@ -923,19 +923,19 @@ no_stairs:
 .endproc
 
 .proc maybe_render_yendor
-  LDX current_dungeon_level
-  CPX #(MAX_DUNGEON_LEVELS - 1)
-  BEQ last_dungeon
-  RTS
-last_dungeon:
   LDA yendor
   BEQ no_yendor
-  LDA #19
+  LDA #17
   STA temp_x
   LDA #26
   STA temp_y
   JMP render
 no_yendor:
+  LDX current_dungeon_level
+  CPX #(MAX_DUNGEON_LEVELS - 1)
+  BEQ last_dungeon
+  RTS
+last_dungeon:
   LDA dungeon_down_stairs_x, X
   STA temp_x
   LDA dungeon_down_stairs_y, X
@@ -955,6 +955,12 @@ render:
   CLC
   ADC #$0f
   STA oam_sprites+Sprite::ycoord, X
+  LDA yendor
+  BNE no_oscillation
+  LDA nmis
+  AND #%1111
+  BNE no_oscillation
+
   LDA rng_seed
   AND #%1
   BEQ :+
@@ -962,9 +968,10 @@ render:
 :
   LDA rng_seed+1
   AND #%1
-  BEQ :+
+  BEQ no_oscillation
   INC oam_sprites+Sprite::ycoord, X
-:
+no_oscillation:
+
   LDA #$12 ; cap tile
   STA oam_sprites+Sprite::tile, X
   LDA #$02
@@ -1292,8 +1299,35 @@ no_collision:
 
   CPY #$0
   BNE :+
+  ; player-specific stuff
   JSR regenerate_hp
+  JSR maybe_get_yendor
 :
+  RTS
+.endproc
+
+.proc maybe_get_yendor
+  LDA yendor
+  BEQ :+
+  RTS
+:
+  LDX current_dungeon_level
+  CPX #(MAX_DUNGEON_LEVELS - 1)
+  BEQ :+
+  RTS
+:
+  LDA agents_x
+  CMP dungeon_down_stairs_x, X
+  BEQ :+
+  RTS
+:
+  LDA agents_y
+  CMP dungeon_down_stairs_y, X
+  BEQ :+
+  RTS
+:
+  LDA #1
+  STA yendor
   RTS
 .endproc
 
