@@ -878,6 +878,74 @@ no_stairs:
   RTS
 .endproc
 
+.proc go_to_bad_end
+  SCREEN_OFF
+
+  LDA #game_states::game_over
+  STA game_state
+
+  LDA PPUSTATUS
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+
+  LDA #<nametable_bad_end
+  STA rle_ptr
+  LDA #>nametable_bad_end
+  STA rle_ptr+1
+  JSR unrle
+
+  JSR refresh_stats
+
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  STA PPUSCROLL
+  STA PPUSCROLL
+
+  VBLANK
+
+  SCREEN_ON
+
+  RTS
+.endproc
+
+.proc go_to_good_end
+  SCREEN_OFF
+
+  LDA #game_states::game_over
+  STA game_state
+
+  LDA PPUSTATUS
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+
+  LDA #<nametable_good_end
+  STA rle_ptr
+  LDA #>nametable_good_end
+  STA rle_ptr+1
+  JSR unrle
+
+  JSR refresh_stats
+
+  LDA #$20
+  STA PPUADDR
+  LDA #$00
+  STA PPUADDR
+  STA PPUSCROLL
+  STA PPUSCROLL
+
+  VBLANK
+
+  SCREEN_ON
+
+  RTS
+.endproc
+
 .proc waiting_to_start
   JSR readjoy
   LDA pressed_buttons
@@ -889,9 +957,20 @@ no_stairs:
 .endproc
 
 .proc game_over
+  ; erase sprites
+  LDX #$00
+  LDA #$F0
+:
+  STA oam_sprites+Sprite::ycoord, X
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  BNE :-
+  STX sprite_counter
+  
   JSR readjoy
   LDA pressed_buttons
-  AND #(BUTTON_START|BUTTON_A|BUTTON_B)
+  AND #(BUTTON_START|BUTTON_SELECT)
   BEQ :+
   JSR go_to_title
 :
@@ -1421,8 +1500,18 @@ no_up:
 .endproc
 
 .proc go_up
-  ; TODO first level ends game
-
+  ; above first level is saci's grandpa
+  ; so the game ends, with or without his cap
+  LDA current_dungeon_level
+  BNE no_ending
+  LDA yendor
+  BEQ no_yendor
+  JSR go_to_good_end
+  RTS
+no_yendor:
+  JSR go_to_bad_end
+  RTS
+no_ending:
   JSR save_agents
   DEC current_dungeon_level
   LDX current_dungeon_level
@@ -1902,6 +1991,8 @@ palettes:
 
 nametable_title: .incbin "../assets/nametables/title.rle"
 nametable_main: .incbin "../assets/nametables/main.rle"
+nametable_good_end: .incbin "../assets/nametables/good-end.rle"
+nametable_bad_end: .incbin "../assets/nametables/bad-end.rle"
 
 .include "../assets/metasprites.inc"
 
