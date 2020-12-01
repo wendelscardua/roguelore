@@ -215,6 +215,7 @@ player_xp: .res 3
 yendor: .res 1
 
 embers: .res 1
+max_embers: .res 1
 ember_direction: .res 1
 ember_x: .res 1
 ember_y: .res 1
@@ -585,8 +586,9 @@ etc:
 
   STA yendor
 
-  LDA #1
+  JSR roll_d6
   STA embers
+  STA max_embers
   LDA #$ff
   STA ember_direction
 
@@ -625,11 +627,7 @@ etc:
   STA temp_acc
   write_tile_to_vram $236f, temp_acc
 
-  LDA embers
-  CLC
-  ADC #$10
-  STA temp_acc
-  write_tile_to_vram $231d, temp_acc
+  write_decimal_to_vram $231c, embers
 
   write_decimal_to_vram $2308, agents_hp
   write_decimal_to_vram $230e, agents_max_hp
@@ -1567,7 +1565,7 @@ no_regen_cap:
 
 .proc regenerate_ember
   LDA embers
-  CMP agents_int
+  CMP max_embers
   BCC :+
   RTS
 :
@@ -1871,6 +1869,8 @@ check_0:
 level_up:
   LDX #0
   JSR level_up_agent
+
+  INC max_embers
   RTS
 .endproc
 
