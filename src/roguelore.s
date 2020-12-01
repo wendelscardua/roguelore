@@ -1003,7 +1003,7 @@ no_stairs:
 .proc render_stuff
   LDX #0
   STX sprite_counter
-  ; TODO render projectiles
+  JSR render_projectiles
   JSR render_agents
   JSR maybe_render_yendor
 
@@ -1015,6 +1015,40 @@ no_stairs:
   INX
   .endrepeat
   BNE :-
+  RTS
+.endproc
+
+.proc render_projectiles
+  LDA ember_direction
+  BPL :+
+  RTS
+:
+  LDX sprite_counter
+
+  LDA ember_x
+  .repeat 3
+  ASL
+  .endrepeat
+  STA oam_sprites+Sprite::xcoord, X
+  LDA ember_y
+  .repeat 3
+  ASL
+  .endrepeat
+  CLC
+  ADC #$0f
+  STA oam_sprites+Sprite::ycoord, X
+
+  LDA #$10 ; ember tile
+  STA oam_sprites+Sprite::tile, X
+  LDA rng_seed
+  AND #%10
+  STA oam_sprites+Sprite::flag, X
+
+  .repeat .sizeof(Sprite)
+  INX
+  .endrepeat
+  STX sprite_counter
+
   RTS
 .endproc
 
@@ -1313,7 +1347,67 @@ no_collision:
   RTS
 .endproc
 
+.proc ember_handler
+  ; slow down ember movement
+  LDA nmis
+  AND #%1
+  BEQ :+
+  RTS
+:
+
+  LDX ember_direction
+
+  LDA delta_x_lt, X
+  CLC
+  ADC ember_x
+  STA temp_x
+
+  LDA delta_y_lt, X
+  CLC
+  ADC ember_y
+  STA temp_y
+
+  LDY current_dungeon_level
+  LDA dungeon_levels, Y
+  TAY
+  JSR dungeon_level_collision
+  BEQ no_collision
+  LDA #$ff
+  STA ember_direction
+  RTS
+no_collision:
+  LDA temp_x
+  STA ember_x
+  LDA temp_y
+  STA ember_y
+
+  LDX #$1
+@loop:
+  LDA agents_x, X
+  CMP temp_x
+  BNE @next
+  LDA agents_y, X
+  CMP temp_y
+  BNE @next
+  JMP hit_enemy
+@next:
+  INX
+  CPX num_agents
+  BNE @loop
+  RTS
+hit_enemy:
+  LDA #$ff
+  STA ember_direction
+  KIL ; TODO hit
+  RTS
+.endproc
+
 .proc process_actions_handler
+  LDA ember_direction
+  BMI agent_actions
+  JSR ember_handler
+  RTS
+agent_actions:
   LDX action_queue_head
   CPX action_queue_tail
   BNE :+
@@ -1456,7 +1550,22 @@ no_regen_cap:
 .endproc
 
 .proc skill_a_handler
-  ; TODO
+  ; for the player, this shoots an ember projectile
+  CPY #0
+  BEQ :+
+  RTS ; TODO - maybe add skils for enemies?
+:
+  LDA embers
+  BNE :+
+  RTS
+:
+  LDA agents_direction
+  STA ember_direction
+  LDA agents_x
+  STA ember_x
+  LDA agents_y
+  STA ember_y
+  DEC embers
   RTS
 .endproc
 
