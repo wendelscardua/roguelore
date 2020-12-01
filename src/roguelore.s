@@ -214,6 +214,11 @@ player_xp: .res 3
 ; (in this case his grandpa's cap)
 yendor: .res 1
 
+embers: .res 1
+ember_direction: .res 1
+ember_x: .res 1
+ember_y: .res 1
+
 action_queue_head: .res 1
 action_queue_tail: .res 1
 
@@ -581,6 +586,11 @@ etc:
   STA yendor
 
   LDA #1
+  STA embers
+  LDA #$ff
+  STA ember_direction
+
+  LDA #1
   STA num_agents
 
   JSR refresh_stats
@@ -614,6 +624,13 @@ etc:
   ADC #$10
   STA temp_acc
   write_tile_to_vram $236f, temp_acc
+
+  LDA embers
+  CLC
+  ADC #$10
+  STA temp_acc
+  write_tile_to_vram $231d, temp_acc
+
   write_decimal_to_vram $2308, agents_hp
   write_decimal_to_vram $230e, agents_max_hp
   write_decimal_to_vram $233c, agents_lv
