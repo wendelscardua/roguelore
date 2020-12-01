@@ -1398,7 +1398,23 @@ no_collision:
 hit_enemy:
   LDA #$ff
   STA ember_direction
-  KIL ; TODO hit
+
+  JSR roll_d6
+  CLC
+  ADC agents_int
+  STA temp_acc
+
+  LDA agents_hp, X
+  SEC
+  SBC temp_acc
+  BPL :+
+  LDA #0
+:
+  STA agents_hp, X
+  BEQ :+
+  RTS
+:
+  JSR gain_xp_from_kill
   RTS
 .endproc
 
@@ -1783,6 +1799,12 @@ no_dodge:
   RTS
 :
 
+  JSR gain_xp_from_kill
+  RTS
+.endproc
+
+; player gains xp from kill X-indexed agent
+.proc gain_xp_from_kill
   LDA agents_lv, X
   TAX
   LDA lv_to_xp_l_lt, X
