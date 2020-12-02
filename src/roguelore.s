@@ -1282,7 +1282,28 @@ next:
 ; (must preserve X)
 ; cobbles Y, temp_*
 .proc get_input_for_agent
-  ; TODO better "ai", different for each type
+  LDA agents_type, X
+  TAY
+  LDA agent_ais_h, Y
+  PHA
+  LDA agent_ais_l, Y
+  PHA
+  RTS
+.endproc
+
+.proc corpo_seco_ai
+  JSR rand
+  AND #%1
+  BEQ move
+
+  TXA
+  PHA
+  ENQUEUE_ACTION X
+  ENQUEUE_ACTION #action_type::skill_b
+  PLA
+  TAX
+  RTS
+move:
   JSR rand
   AND #%11
   STA agents_direction, X
@@ -1311,6 +1332,26 @@ no_collision:
   ENQUEUE_ACTION #action_type::move
   PLA
   TAX
+  RTS
+.endproc
+
+.proc mula_sem_cabeca_ai
+  JSR corpo_seco_ai ; TODO customize
+  RTS
+.endproc
+
+.proc boitata_ai
+  JSR corpo_seco_ai ; TODO customize
+  RTS
+.endproc
+
+.proc cuca_ai
+  JSR corpo_seco_ai ; TODO customize
+  RTS
+.endproc
+
+.proc mapinguari_ai
+  JSR corpo_seco_ai ; TODO customize
   RTS
 .endproc
 
@@ -2165,6 +2206,15 @@ playing_state_handlers_h: .hibytes playing_state_handlers
 
 action_handlers_l: .lobytes action_handlers
 action_handlers_h: .hibytes action_handlers
+
+.define agent_ais $0000, \
+                  corpo_seco_ai-1, \
+                  mula_sem_cabeca_ai-1, \
+                  boitata_ai-1, \
+                  cuca_ai-1, \
+                  mapinguari_ai-1
+agent_ais_l: .lobytes agent_ais
+agent_ais_h: .hibytes agent_ais
 
 palettes:
 .incbin "../assets/bg-palettes.pal"
