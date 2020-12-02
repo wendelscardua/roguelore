@@ -998,7 +998,7 @@ no_stairs:
   .endrepeat
   BNE :-
   STX sprite_counter
-  
+
   JSR readjoy
   LDA pressed_buttons
   AND #(BUTTON_START|BUTTON_SELECT)
@@ -1264,7 +1264,9 @@ next:
   ADC #ACTION_COUNTER
   STA agents_action_counter, X
 
+  save_regs
   JSR get_input_for_agent
+  restore_regs
 
 @next:
   INX
@@ -1279,8 +1281,6 @@ next:
 .endproc
 
 ; enqueue action for current (X-indexed) agent if able
-; (must preserve X)
-; cobbles Y, temp_*
 .proc get_input_for_agent
   LDA agents_type, X
   TAY
@@ -1296,12 +1296,8 @@ next:
   AND #%1
   BEQ move
 
-  TXA
-  PHA
   ENQUEUE_ACTION X
   ENQUEUE_ACTION #action_type::skill_b
-  PLA
-  TAX
   RTS
 move:
   JSR rand
@@ -1326,12 +1322,8 @@ move:
   BEQ no_collision
   JMP get_input_for_agent
 no_collision:
-  TXA
-  PHA
   ENQUEUE_ACTION X
   ENQUEUE_ACTION #action_type::move
-  PLA
-  TAX
   RTS
 .endproc
 
