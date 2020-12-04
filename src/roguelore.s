@@ -1433,8 +1433,12 @@ collision:
   RTS
 .endproc
 
+; disguised
+; tries to reach player
 .proc cuca_ai
-  JSR corpo_seco_ai ; TODO customize
+  JSR _point_to_player
+  ENQUEUE_ACTION X
+  ENQUEUE_ACTION #action_type::move
   RTS
 .endproc
 
@@ -1487,6 +1491,75 @@ move_down:
 move_up:
   LDA #direction::up
   STA agents_direction, X
+  RTS
+.endproc
+
+; change X-indexed agent direction
+; so it moves towards the player
+.proc _point_to_player
+  LDA #$ff
+  STA temp_flag
+
+  LDA rng_seed
+  AND #%11
+  STA agents_direction, X
+
+  LDY #$3
+loop:
+  LDA agents_x, X
+  CLC
+  ADC delta_x_lt, Y
+  STA temp_x
+  LDA agents_y, X
+  CLC
+  ADC delta_y_lt, Y
+  STA temp_y
+
+  STY temp_tile
+  LDY current_dungeon_level
+  LDA dungeon_levels, Y
+  TAY
+  JSR dungeon_level_collision
+  BNE collision
+
+  JSR _distance_to_player
+  CMP temp_flag
+  BCS collision
+  STA temp_flag
+  LDA temp_tile
+  STA agents_direction, X
+collision:
+  LDY temp_tile
+  DEY
+  BPL loop
+
+  RTS
+.endproc
+
+; input: temp_x, temp_y
+; output: manhattan distance to player agent
+; cobbles temp_acc
+.proc _distance_to_player
+  LDA temp_x
+  SEC
+  SBC agents_x
+  BPL :+
+  EOR #$ff
+  CLC
+  ADC #1
+:
+  STA temp_acc
+
+  LDA temp_y
+  SEC
+  SBC agents_y
+  BPL :+
+  EOR #$ff
+  CLC
+  ADC #1
+:
+  CLC
+  ADC temp_acc
   RTS
 .endproc
 
