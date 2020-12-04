@@ -1430,6 +1430,30 @@ collision:
   LDY agents_direction, X
   LDA reverse_direction, Y
   STA agents_direction, X
+  TAY
+
+  LDA agents_x, X
+  CLC
+  ADC delta_x_lt, Y
+  STA temp_x
+
+  LDA agents_y, X
+  CLC
+  ADC delta_y_lt, Y
+  STA temp_y
+
+  LDY current_dungeon_level
+  LDA dungeon_levels, Y
+  TAY
+  JSR dungeon_level_collision
+  BNE second_collision
+  RTS
+second_collision:
+  LDA agents_direction, X
+  CLC
+  ADC #1
+  AND #%11
+  STA agents_direction, X
   RTS
 .endproc
 
