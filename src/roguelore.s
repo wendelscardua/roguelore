@@ -1974,9 +1974,10 @@ exit_loop:
   BCS no_dodge
   RTS
 no_dodge:
-  ; damage = 1d6 + strength
+  ; damage = 1d6 + (strength - 1)
   LDA agents_str, Y
   STA temp_acc
+  DEC temp_acc
   STY temp_y
   JSR roll_d6
   LDY temp_y
