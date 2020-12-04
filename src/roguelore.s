@@ -1291,13 +1291,12 @@ next:
   RTS
 .endproc
 
+; move 75% of turns
+; totally random direction
 .proc corpo_seco_ai
   JSR rand
-  AND #%1
-  BEQ move
-
-  ENQUEUE_ACTION X
-  ENQUEUE_ACTION #action_type::skill_b
+  AND #%11
+  BNE move
   RTS
 move:
   JSR rand
@@ -1320,15 +1319,63 @@ move:
   TAY
   JSR dungeon_level_collision
   BEQ no_collision
-  JMP get_input_for_agent
+  RTS
 no_collision:
   ENQUEUE_ACTION X
   ENQUEUE_ACTION #action_type::move
   RTS
 .endproc
 
+; straight line
+; stay still 25% of the turns
+; changes direction
+; - when colliding with walls
+; - when near player (melee attack)
+; - with a small random chance
 .proc mula_sem_cabeca_ai
-  JSR corpo_seco_ai ; TODO customize
+  JSR rand
+  AND #%11
+  BNE move
+  RTS
+move:
+  JSR _set_melee_direction
+
+  ; small chance of randomizing direction
+  LDA rng_seed
+  AND #%1111100
+  BNE after_redirect
+  LDA rng_seed+1
+  AND #%11
+  STA agents_direction, X
+after_redirect:
+  LDY agents_direction, X
+
+  LDA agents_x, X
+  CLC
+  ADC delta_x_lt, Y
+  STA temp_x
+
+  LDA agents_y, X
+  CLC
+  ADC delta_y_lt, Y
+  STA temp_y
+
+  LDY current_dungeon_level
+  LDA dungeon_levels, Y
+  TAY
+  JSR dungeon_level_collision
+  BEQ no_collision
+
+  LDA rng_seed+1
+  AND #%1100
+  LSR
+  LSR
+  STA agents_direction, X
+  RTS
+no_collision:
+  ENQUEUE_ACTION X
+  ENQUEUE_ACTION #action_type::move
+
   RTS
 .endproc
 
@@ -1344,6 +1391,53 @@ no_collision:
 
 .proc mapinguari_ai
   JSR corpo_seco_ai ; TODO customize
+  RTS
+.endproc
+
+; change agent direction to attack player
+; as long as the player is in melee range
+; X = agent index
+.proc _set_melee_direction
+  LDA agents_x, X
+  CMP agents_x
+  BEQ maybe_vertical
+  LDA agents_y, X
+  CMP agents_y
+  BEQ maybe_horizontal
+  RTS
+maybe_horizontal:
+  LDA agents_x
+  SEC
+  SBC agents_x, X
+  CMP #$01
+  BEQ move_right
+  CMP #$ff
+  BEQ move_left
+  RTS
+move_right:
+  LDA #direction::right
+  STA agents_direction, X
+  RTS
+move_left:
+  LDA #direction::left
+  STA agents_direction, X
+  RTS
+maybe_vertical:
+  LDA agents_y
+  SEC
+  SBC agents_y, X
+  CMP #$01
+  BEQ move_down
+  CMP #$ff
+  BEQ move_up
+  RTS
+move_down:
+  LDA #direction::down
+  STA agents_direction, X
+  RTS
+move_up:
+  LDA #direction::up
+  STA agents_direction, X
   RTS
 .endproc
 
