@@ -1585,10 +1585,16 @@ hit_enemy:
   LDA #$ff
   STA ember_direction
 
+  ; ember damage = 2d6 + (int-1)
   JSR roll_d6
   CLC
   ADC agents_int
   STA temp_acc
+  JSR roll_d6
+  CLC
+  ADC temp_acc
+  STA temp_acc
+  DEC temp_acc
 
   LDA agents_hp, X
   SEC
