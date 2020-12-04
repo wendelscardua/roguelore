@@ -1379,8 +1379,52 @@ no_collision:
   RTS
 .endproc
 
+.segment "RODATA"
+reverse_direction:
+.byte direction::down, direction::up, direction::right, direction::left
+.segment "CODE"
+
+; zigzaging movement
+; small chance of changind direction
+; will melee attack if able
 .proc boitata_ai
-  JSR corpo_seco_ai ; TODO customize
+  JSR _set_melee_direction
+  JSR rand
+  ; small chance of rotating direction
+  LDA rng_seed
+  AND #%1111100
+  BNE after_redirect
+  LDA agents_direction, X
+  CLC
+  ADC #1
+  AND #%11
+  STA agents_direction, X
+after_redirect:
+  LDY agents_direction, X
+
+  LDA agents_x, X
+  CLC
+  ADC delta_x_lt, Y
+  STA temp_x
+
+  LDA agents_y, X
+  CLC
+  ADC delta_y_lt, Y
+  STA temp_y
+
+  LDY current_dungeon_level
+  LDA dungeon_levels, Y
+  TAY
+  JSR dungeon_level_collision
+  BNE collision
+
+  ENQUEUE_ACTION X
+  ENQUEUE_ACTION #action_type::move
+  RTS
+collision:
+  LDY agents_direction, X
+  LDA reverse_direction, Y
+  STA agents_direction, X
   RTS
 .endproc
 
