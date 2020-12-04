@@ -567,7 +567,7 @@ etc:
   STA agents_spd
   JSR roll_d6
   CLC
-  ADC #10
+  ADC #12
   STA agents_max_hp
   STA agents_hp
   LDA #direction::right
@@ -659,10 +659,14 @@ etc:
   LDA #1
   STA num_agents
 
-  ; generate d6 enemies
+  ; generate min(MAX_AGENTS-1, dlv + d6) enemies
   JSR roll_d6
-  CLC
-  ADC #8
+  SEC
+  ADC current_dungeon_level
+  CMP #(MAX_AGENTS-1)
+  BCC :+
+  LDA #MAX_AGENTS-1
+:
   TAX
 loop:
   JSR spawn_random_enemy
@@ -2519,7 +2523,7 @@ random_enemy_table:
 default_str: .byte  1,  1,  1,  2,  4,  5
 default_int: .byte  1,  1,  1,  2,  3,  1
 default_spd: .byte  1,  1,  2,  2,  2,  3
-default_hp:  .byte 10, 10, 15, 20, 30, 50
+default_hp:  .byte 12,  4,  8, 10, 20, 40
 default_lv:  .byte  1,  3,  3,  5,  8, 12
 
 ; strings
