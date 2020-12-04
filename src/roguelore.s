@@ -1302,7 +1302,8 @@ move:
   JSR rand
   AND #%11
   STA agents_direction, X
-  TAY
+  JSR _set_melee_direction
+  LDY agents_direction, X
 
   LDA agents_x, X
   CLC
