@@ -1461,8 +1461,8 @@ second_collision:
   RTS
 .endproc
 
-; disguised
-; tries to reach player
+; disguised as corpo seco
+; tries to reach player when revealed
 .proc cuca_ai
   JSR rand
   LDA agents_aux, X
@@ -1472,11 +1472,10 @@ second_collision:
   LDA agents_y, X
   STA temp_y
   JSR _distance_to_player
-  CMP #4
+  CMP agents_int, X
   BCC reveal_now
   JSR corpo_seco_ai
   RTS
-
 reveal_now:
   LDA #1
   STA agents_aux, X
@@ -1520,8 +1519,48 @@ no_collision:
   RTS
 .endproc
 
+; if healthy, runs towards player
+; if unhealthy, runs away instead
+; (but will melee attack if able)
 .proc mapinguari_ai
-  JSR corpo_seco_ai ; TODO customize
+  JSR _point_to_player
+  LDA agents_max_hp, X
+  SEC
+  SBC agents_hp, X
+  CMP agents_hp, X
+  BCC skip_run_away
+
+  LDY agents_direction, X
+  LDA reverse_direction, Y
+  STA agents_direction, X
+
+  JSR _set_melee_direction
+skip_run_away:
+  LDY agents_direction, X
+  
+  LDA agents_x, X
+  CLC
+  ADC delta_x_lt, Y
+  STA temp_x
+
+  LDA agents_y, X
+  CLC
+  ADC delta_y_lt, Y
+  STA temp_y
+
+  LDY current_dungeon_level
+  LDA dungeon_levels, Y
+  TAY
+  JSR dungeon_level_collision
+  BEQ no_collision
+
+  LDA rng_seed
+  AND #%11
+  STA agents_direction, X
+  RTS
+no_collision:
+  ENQUEUE_ACTION X
+  ENQUEUE_ACTION #action_type::move  
   RTS
 .endproc
 
@@ -2695,7 +2734,7 @@ random_enemy_table:
 ;                   S   c   m   b   C   M
 default_str: .byte  1,  1,  1,  2,  4,  5
 default_int: .byte  1,  1,  1,  2,  3,  1
-default_spd: .byte  1,  1,  2,  2,  2,  3
+default_spd: .byte  1,  1,  2,  2,  2,  1
 default_hp:  .byte 12,  4,  8, 10, 20, 40
 default_lv:  .byte  1,  3,  3,  5,  8, 12
 
