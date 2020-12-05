@@ -748,6 +748,10 @@ reroll_level:
   ; stats
   JSR roll_stats_for_agent
 
+  ; aux data
+  LDA #0
+  STA agents_aux, X
+
   ; position
 
 reroll_position:
@@ -1460,7 +1464,57 @@ second_collision:
 ; disguised
 ; tries to reach player
 .proc cuca_ai
+  JSR rand
+  LDA agents_aux, X
+  BNE revealed
+  LDA agents_x, X
+  STA temp_x
+  LDA agents_y, X
+  STA temp_y
+  JSR _distance_to_player
+  CMP #4
+  BCC reveal_now
+  JSR corpo_seco_ai
+  RTS
+
+reveal_now:
+  LDA #1
+  STA agents_aux, X
+
+revealed:
   JSR _point_to_player
+
+  ; small chance of randomizing direction
+  LDA rng_seed
+  AND #%1111100
+  BNE after_redirect
+  LDA rng_seed+1
+  AND #%11
+  STA agents_direction, X
+after_redirect:
+  LDY agents_direction, X
+
+  LDA agents_x, X
+  CLC
+  ADC delta_x_lt, Y
+  STA temp_x
+
+  LDA agents_y, X
+  CLC
+  ADC delta_y_lt, Y
+  STA temp_y
+
+  LDY current_dungeon_level
+  LDA dungeon_levels, Y
+  TAY
+  JSR dungeon_level_collision
+  BEQ no_collision
+
+  LDA rng_seed
+  AND #%11
+  STA agents_direction, X
+  RTS
+no_collision:
   ENQUEUE_ACTION X
   ENQUEUE_ACTION #action_type::move
   RTS
@@ -1584,6 +1638,10 @@ collision:
 :
   CLC
   ADC temp_acc
+  BCS :+
+  RTS
+overflow:
+  LDA #$ff
   RTS
 .endproc
 
@@ -2261,9 +2319,10 @@ loop:
   PHA
 
   LDX agents_type, Y
-  ; TODO: implement cuca camo here
-
   LDA tile_per_agent_type, X
+  
+  JSR _cuca_camo ; sets A to cuca camo if able
+  
   STA temp_tile
   LDA flag_per_agent_type, X
   STA temp_flag
@@ -2290,6 +2349,23 @@ skip:
   CPY num_agents
   BNE loop
   STX sprite_counter
+  RTS
+.endproc
+
+; sets A to cuca camo tile if able
+; X = agent type
+; Y = agent index
+.proc _cuca_camo
+  CPX #agent_type::cuca
+  BEQ :+
+  RTS
+:
+  LDA agents_aux, Y
+  BEQ camo
+  LDA tile_per_agent_type, X
+  RTS
+camo:
+  LDA tile_per_agent_type + agent_type::corpo_seco
   RTS
 .endproc
 
