@@ -1805,6 +1805,7 @@ hit_enemy:
   RTS
 :
   JSR gain_xp_from_kill
+  JSR regenerate_ember
   RTS
 .endproc
 
