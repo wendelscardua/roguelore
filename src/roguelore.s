@@ -1947,7 +1947,7 @@ regen:
   LDY temp_y
   LDA agents_hp, Y
   CLC
-  ADC #1
+  ADC agents_int, Y
   CMP agents_max_hp, Y
   BCC no_regen_cap
   LDA agents_max_hp, Y
