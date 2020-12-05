@@ -2732,11 +2732,11 @@ random_enemy_table:
 
 ; default stats per agent
 ;                   S   c   m   b   C   M
-default_str: .byte  1,  1,  1,  2,  4,  5
-default_int: .byte  1,  1,  1,  2,  3,  1
-default_spd: .byte  1,  1,  2,  2,  2,  1
-default_hp:  .byte 12,  4,  8, 10, 20, 40
-default_lv:  .byte  1,  3,  3,  5,  8, 12
+default_str: .byte  1,  1,  1,  1,  3,  4
+default_int: .byte  1,  1,  1,  1,  3,  1
+default_spd: .byte  1,  1,  2,  1,  2,  1
+default_hp:  .byte 12,  4,  8, 10, 10, 20
+default_lv:  .byte  1,  5,  5, 10, 10, 10
 
 ; strings
 string_game_over: .byte "Saci morreu...", $00
